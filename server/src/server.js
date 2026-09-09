@@ -5,15 +5,21 @@ import { env } from './config/env.js';
 import { initSockets } from './sockets/index.js';
 import { startWorkers, stopWorkers } from './jobs/index.js';
 import { closeRedis } from './config/redis.js';
+import { seedInitialData } from './seeds/startup.js';
 
 async function bootstrap() {
+  // Connect MongoDB
   await connectDB();
+
+  // Automatically prepare initial/demo data
+  await seedInitialData();
+
   const app = createApp();
   const server = http.createServer(app);
 
   initSockets(server);
 
-  // Optional BullMQ workers — graceful no-op if Redis is down
+  // Optional BullMQ workers
   startWorkers().catch((err) => {
     console.warn('[jobs] failed to start workers:', err.message);
   });
@@ -24,12 +30,14 @@ async function bootstrap() {
 
   const shutdown = async (signal) => {
     console.log(`Received ${signal}, shutting down...`);
+
     try {
       await stopWorkers();
       await closeRedis();
     } catch (err) {
       console.error('Shutdown error', err);
     }
+
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
   };
