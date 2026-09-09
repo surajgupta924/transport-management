@@ -100,6 +100,11 @@ export function RegisterPage() {
           Sign in
         </Link>
       </p>
+      <p className="mt-3 text-center text-sm text-ink-500">
+        <Link to="/" className="font-medium text-ink-700 hover:text-ink-900">
+          Back to home
+        </Link>
+      </p>
     </AuthLayout>
   )
 }

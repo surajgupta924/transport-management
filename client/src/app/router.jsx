@@ -55,11 +55,13 @@ import { PortalTrackPage } from '../features/customer-portal/PortalTrackPage'
 import { PortalInvoicesPage } from '../features/customer-portal/PortalInvoicesPage'
 import { PortalSupportPage } from '../features/customer-portal/PortalSupportPage'
 import { PortalSupportDetailPage } from '../features/customer-portal/PortalSupportDetailPage'
+import { HomePage } from '../features/home/HomePage'
 
 export function AppRouter() {
   return (
     <AuthBootstrap>
       <Routes>
+        <Route path="/" element={<HomePage />} />
         <Route element={<GuestOnly />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -184,8 +186,7 @@ export function AppRouter() {
           </Route>
         </Route>
 
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthBootstrap>
   )

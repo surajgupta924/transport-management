@@ -99,6 +99,11 @@ export function LoginPage() {
           Create an account
         </Link>
       </p>
+      <p className="mt-3 text-center text-sm text-ink-500">
+        <Link to="/" className="font-medium text-ink-700 hover:text-ink-900">
+          Back to home
+        </Link>
+      </p>
     </AuthLayout>
   )
 }
@@ -118,7 +123,7 @@ export function AuthLayout({ title, subtitle, children }) {
       />
       <div className="relative mx-auto flex min-h-svh max-w-6xl flex-col justify-center gap-10 px-4 py-10 lg:flex-row lg:items-center lg:gap-16">
         <div className="max-w-md text-white lg:flex-1">
-          <div className="mb-6 flex items-center gap-3">
+          <Link to="/" className="mb-6 flex items-center gap-3">
             {branding.logoUrl ? (
               <img src={branding.logoUrl} alt={branding.companyName} className="h-11 w-11 rounded-xl object-contain bg-white p-1" />
             ) : (
@@ -130,7 +135,7 @@ export function AuthLayout({ title, subtitle, children }) {
               <p className="font-display text-xl font-semibold tracking-tight">{branding.companyName}</p>
               <p className="text-xs uppercase tracking-[0.18em] text-ink-400">{branding.tagline}</p>
             </div>
-          </div>
+          </Link>
           <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             Move freight with clarity and control.
           </h1>
