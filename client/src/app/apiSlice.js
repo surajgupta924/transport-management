@@ -1,0 +1,35 @@
+import { createApi } from '@reduxjs/toolkit/query/react'
+import { baseQueryWithReauth } from '../lib/baseQuery'
+
+export const apiSlice = createApi({
+  reducerPath: 'api',
+  baseQuery: baseQueryWithReauth,
+  tagTypes: [
+    'Me',
+    'Users',
+    'Roles',
+    'Permissions',
+    'Customers',
+    'Vehicles',
+    'Drivers',
+    'Bookings',
+    'Trips',
+    'Fuel',
+    'Maintenance',
+    'Expenses',
+    'POD',
+    'Invoices',
+    'Payments',
+    'Ledger',
+    'Reports',
+    'Notifications',
+    'Support',
+    'Branches',
+    'Settings',
+    'Vendors',
+    'AuditLogs',
+    'Dashboard',
+    'Settlements',
+  ],
+  endpoints: () => ({}),
+})
