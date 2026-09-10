@@ -427,7 +427,13 @@ export async function assignShipment(payload, actor, req) {
 export async function acceptAssignment(id, actor, req) {
   const trip = await Trip.findById(id);
   if (!trip) throw new ApiError(404, 'Trip not found');
-  if (trip.status !== 'ASSIGNED' && trip.assignmentStatus !== 'ASSIGNED') {
+  if (actor?.portalType === 'DRIVER') {
+    const driverId = linkedId(actor.linkedDriver);
+    if (!driverId || String(trip.driver) !== String(driverId)) {
+      throw new ApiError(403, 'This assignment is not yours');
+    }
+  }
+  if (!['ASSIGNED', 'PENDING_APPROVAL'].includes(trip.assignmentStatus) && trip.status !== 'ASSIGNED') {
     throw new ApiError(400, 'Only assigned trips can be accepted');
   }
   trip.assignmentStatus = 'ACCEPTED';
@@ -454,6 +460,12 @@ export async function acceptAssignment(id, actor, req) {
 export async function rejectAssignment(id, { reason } = {}, actor, req) {
   const trip = await Trip.findById(id);
   if (!trip) throw new ApiError(404, 'Trip not found');
+  if (actor?.portalType === 'DRIVER') {
+    const driverId = linkedId(actor.linkedDriver);
+    if (!driverId || String(trip.driver) !== String(driverId)) {
+      throw new ApiError(403, 'This assignment is not yours');
+    }
+  }
   trip.assignmentStatus = 'REJECTED';
   trip.rejectedAt = new Date();
   trip.status = 'CANCELLED';

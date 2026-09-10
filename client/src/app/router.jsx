@@ -186,8 +186,10 @@ export function AppRouter() {
             <Route path="/driver" element={<DriverShell />}>
               <Route index element={<DriverDashboardPage />} />
               <Route path="trips" element={<DriverTripsPage />} />
+              <Route path="assignments" element={<DriverTripsPage />} />
               <Route path="trips/:id" element={<DriverTripDetailPage />} />
               <Route path="active" element={<DriverActiveTripPage />} />
+              <Route path="deliveries" element={<DriverActiveTripPage />} />
               <Route path="bookings/new" element={<DriverBookingPage />} />
               <Route path="expenses" element={<DriverExpensesPage />} />
               <Route path="pod" element={<DriverPodPage />} />

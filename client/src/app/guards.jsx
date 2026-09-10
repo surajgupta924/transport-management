@@ -29,7 +29,10 @@ export function AuthBootstrap({ children }) {
         return
       }
       try {
-        const result = await fetchMe().unwrap()
+        const result = await Promise.race([
+          fetchMe().unwrap(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('bootstrap-timeout')), 6000)),
+        ])
         if (!cancelled) {
           dispatch(
             setCredentials({

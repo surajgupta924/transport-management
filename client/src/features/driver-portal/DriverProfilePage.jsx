@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { useToast } from '../../components/ui/Toast'
 import { getErrorMessage } from '../../lib/utils'
+import { PageHeader } from '../../components/common/PageHeader'
 import { StatusBadge } from '../../components/common/StatusBadge'
 
 const schema = z
@@ -52,8 +53,8 @@ export function DriverProfilePage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-xl font-semibold text-ink-900">Profile</h1>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <PageHeader title="Profile" description="Your driver account and password." />
       <Card>
         <CardHeader title="Account" />
         <CardBody className="space-y-2 text-sm">

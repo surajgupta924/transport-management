@@ -15,6 +15,8 @@ export function Topbar({ onMenuClick }) {
   const navigate = useNavigate()
   const [logoutApi] = useLogoutMutation()
   const isCustomer = user?.portalType === 'CUSTOMER'
+  const isDriver = user?.portalType === 'DRIVER'
+  const bellTo = isCustomer ? '/portal/track' : isDriver ? '/driver/active' : '/app/notifications'
   const { data } = useGetNotificationsQuery({ page: 1, limit: 1, unread: 'true' }, { pollingInterval: 15000 })
   const unread = data?.meta?.unreadCount || 0
   const [now, setNow] = useState(() => new Date())
@@ -53,7 +55,7 @@ export function Topbar({ onMenuClick }) {
         <span className="hidden text-sm tabular-nums text-slate-500 sm:inline">
           {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
-        <Link to={isCustomer ? '/portal/track' : '/app/notifications'} className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100">
+        <Link to={bellTo} className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100">
           <Bell className="h-5 w-5" />
           {unread > 0 && (
             <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />

@@ -16,6 +16,9 @@ import {
   ArrowRight,
   CheckCircle2,
   Navigation,
+  Play,
+  Sparkles,
+  Globe2,
 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 import { useBranding } from '../settings/BrandingProvider'
@@ -77,18 +80,21 @@ const portals = [
     body: 'Bookings, fleet, live map, billing, expenses, settings, and branding — one console for the transport office.',
     to: '/login',
     cta: 'Staff login',
+    accent: 'from-blue-500/20 to-cyan-400/10',
   },
   {
     title: 'Driver app',
-    body: 'Active trip, Start Mobile GPS, book for a walk-in client, log expenses with receipts, and submit POD from the phone.',
+    body: 'Accept assignments, start live GPS, log trip expenses with receipts, and submit POD from a desktop-ready workspace.',
     to: '/login',
     cta: 'Driver login',
+    accent: 'from-amber-400/20 to-orange-500/10',
   },
   {
     title: 'Customer portal',
     body: 'Register, verify email, book freight, track shipments, and pay invoices without calling the control room.',
     to: '/register',
     cta: 'Create account',
+    accent: 'from-emerald-400/20 to-teal-500/10',
   },
 ]
 
@@ -102,14 +108,14 @@ export function HomePage() {
   const supportPhone = branding.supportPhone || '+91-9999999999'
 
   return (
-    <div className="min-h-svh bg-ink-50 text-ink-800">
-      <header className="sticky top-0 z-40 border-b border-ink-200/80 bg-white/90 backdrop-blur">
+    <div className="min-h-svh bg-[#f4f7fb] text-ink-800">
+      <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 shadow-[0_8px_30px_rgb(15_23_42_/_0.04)] backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2.5">
             {branding.logoUrl ? (
               <img src={branding.logoUrl} alt="" className="h-9 w-9 rounded-lg object-contain" />
             ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 font-display text-sm font-bold text-ink-950">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-sky-500 font-display text-sm font-bold text-white shadow-lg shadow-blue-500/30">
                 {branding.initials}
               </span>
             )}
@@ -120,7 +126,7 @@ export function HomePage() {
           </Link>
           <nav className="hidden items-center gap-6 text-sm font-medium text-ink-600 md:flex">
             {navItems.map((item) => (
-              <a key={item.href} href={item.href} className="hover:text-ink-900">
+              <a key={item.href} href={item.href} className="transition hover:text-blue-700">
                 {item.label}
               </a>
             ))}
@@ -136,7 +142,7 @@ export function HomePage() {
                   <Button variant="secondary">Login</Button>
                 </Link>
                 <Link to="/register">
-                  <Button>Book a trip</Button>
+                  <Button className="shadow-lg shadow-blue-600/20">Book a trip</Button>
                 </Link>
               </>
             )}
@@ -174,31 +180,37 @@ export function HomePage() {
 
       <main id="top">
         <section className="relative overflow-hidden bg-ink-950 text-white">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(245,158,11,0.22),_transparent_45%),radial-gradient(ellipse_at_bottom_left,_rgba(14,165,233,0.12),_transparent_40%)]" />
-          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="animate-glow absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-500/30 blur-3xl" />
+            <div className="animate-glow absolute -bottom-24 left-10 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+          </div>
+          <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-300">Transport management system</p>
-              <h1 className="mt-3 font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                Transport management system
+              </p>
+              <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.1] tracking-tight sm:text-6xl">
                 Move freight across India with one operations platform.
               </h1>
-              <p className="mt-4 max-w-xl text-base leading-relaxed text-ink-300">
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300">
                 {branding.companyName} runs bookings, fleet, live GPS, proof of delivery, billing, and driver expenses
-                in a single ERP. Customers book online with email OTP. Drivers share live location and receipts.
-                Admins control branding, invoices, and trip closure.
+                in a single ERP. Customers book online. Drivers accept trips and share live location. Admins close every delivery.
               </p>
-              <ul className="mt-6 space-y-2 text-sm text-ink-200">
+              <ul className="mt-7 space-y-2.5 text-sm text-slate-200">
                 {[
                   'Complete pickup and delivery addresses, contacts, and cargo details',
-                  'Real email OTP before an online booking is accepted',
                   'Live GPS on the map, with mobile fallback and privacy after delivery',
+                  'Driver assignments, trip expenses, and POD closure in one workspace',
                 ].map((line) => (
                   <li key={line} className="flex gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-400" />
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                     {line}
                   </li>
                 ))}
               </ul>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-9 flex flex-wrap gap-3">
                 {isAuthenticated ? (
                   <Link to={dashboard}>
                     <Button size="lg">Go to your workspace</Button>
@@ -206,7 +218,7 @@ export function HomePage() {
                 ) : (
                   <>
                     <Link to="/login">
-                      <Button size="lg">
+                      <Button size="lg" className="shadow-xl shadow-blue-500/30">
                         Login
                         <ArrowRight className="h-4 w-4" />
                       </Button>
@@ -220,30 +232,76 @@ export function HomePage() {
                 )}
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                { label: 'Online + offline bookings', value: 'One workflow' },
-                { label: 'GPS refresh', value: 'Every 10–30s' },
-                { label: 'Portals', value: 'Admin · Driver · Client' },
-                { label: 'Documents', value: 'POD, LR, invoices' },
-              ].map((card) => (
-                <div key={card.label} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <p className="font-display text-lg font-semibold">{card.value}</p>
-                  <p className="mt-1 text-sm text-ink-400">{card.label}</p>
+
+            <div className="relative">
+              <div className="animate-float rounded-3xl border border-white/10 bg-white/10 p-4 shadow-2xl backdrop-blur-md">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-sky-200">Live tracking</p>
+                    <p className="font-display text-lg font-semibold">SHP-1787809368499</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-400/20 px-2.5 py-1 text-xs font-semibold text-emerald-300">In transit</span>
                 </div>
-              ))}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-blue-950 p-5">
+                  <div className="absolute left-6 top-6 h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.9)]" />
+                  <div className="absolute bottom-8 right-8 h-2 w-2 rounded-full bg-amber-400" />
+                  <svg viewBox="0 0 240 120" className="h-32 w-full text-sky-400/80">
+                    <path d="M12 96 C 60 20, 120 20, 228 28" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="6 8" />
+                    <circle cx="12" cy="96" r="5" fill="#38bdf8" />
+                    <circle cx="228" cy="28" r="5" fill="#fbbf24" />
+                  </svg>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                    <p className="rounded-xl bg-white/5 px-3 py-2 text-slate-300">Ghazipur → Ballia</p>
+                    <p className="rounded-xl bg-white/5 px-3 py-2 text-slate-300">GPS every 30s</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-xl bg-white/5 py-3">
+                    <p className="font-display text-lg font-semibold">3</p>
+                    <p className="text-slate-400">Portals</p>
+                  </div>
+                  <div className="rounded-xl bg-white/5 py-3">
+                    <p className="font-display text-lg font-semibold">10s</p>
+                    <p className="text-slate-400">Map refresh</p>
+                  </div>
+                  <div className="rounded-xl bg-white/5 py-3">
+                    <p className="font-display text-lg font-semibold">POD</p>
+                    <p className="text-slate-400">Trip close</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 hidden items-center gap-3 rounded-2xl border border-white/10 bg-ink-900/90 px-4 py-3 shadow-xl sm:flex">
+                <Play className="h-4 w-4 text-amber-300" />
+                <div>
+                  <p className="text-xs font-semibold">Driver GPS fallback</p>
+                  <p className="text-[11px] text-slate-400">Mobile coordinates if vehicle GPS is off</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
+        <section className="relative z-10 mx-auto -mt-8 grid max-w-6xl gap-3 px-4 sm:grid-cols-4">
+          {[
+            { label: 'Online + offline bookings', value: 'One workflow' },
+            { label: 'GPS refresh', value: 'Every 10–30s' },
+            { label: 'Portals', value: 'Admin · Driver · Client' },
+            { label: 'Documents', value: 'POD, LR, invoices' },
+          ].map((card) => (
+            <div key={card.label} className="rounded-2xl border border-white/80 bg-white p-5 shadow-[0_18px_40px_rgb(15_23_42_/_0.08)]">
+              <p className="font-display text-lg font-semibold text-ink-900">{card.value}</p>
+              <p className="mt-1 text-sm text-ink-500">{card.label}</p>
+            </div>
+          ))}
+        </section>
+
         <section id="about" className="mx-auto max-w-6xl px-4 py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">About</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">About</p>
           <h2 className="mt-2 font-display text-3xl font-semibold text-ink-900">A complete TMS for a working transport company</h2>
           <p className="mt-4 max-w-3xl text-ink-600">
             {branding.companyName} is built for Indian road freight: Ghazipur to Lucknow, Gonda to Gorakhpur, or any
-            lane you run. Staff manage the office. Drivers work from a mobile-first app. Shippers and consignees use
-            the customer portal. Branding (logo, favicon, company name) is controlled by admin in Settings, so the
-            dashboard matches your company — not a generic template.
+            lane you run. Staff manage the office. Drivers work from a full assignment, expense, GPS, and POD workspace.
+            Shippers use the customer portal. Branding is controlled by admin in Settings.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <Fact title="Who we serve" body="Fleet owners, transport offices, contract drivers, and customers who need AWB-style tracking and invoices." />
@@ -254,12 +312,17 @@ export function HomePage() {
 
         <section id="services" className="border-y border-ink-200 bg-white py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Services</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Services</p>
             <h2 className="mt-2 font-display text-3xl font-semibold text-ink-900">Everything from booking to settlement</h2>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {services.map((s) => (
-                <article key={s.title} className="rounded-2xl border border-ink-200 p-5 shadow-[var(--shadow-card)]">
-                  <s.icon className="h-6 w-6 text-brand-600" />
+                <article
+                  key={s.title}
+                  className="group rounded-2xl border border-ink-200 bg-white p-5 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_40px_rgb(37_99_235_/_0.12)]"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">
+                    <s.icon className="h-5 w-5" />
+                  </span>
                   <h3 className="mt-3 font-display text-lg font-semibold text-ink-900">{s.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-ink-600">{s.body}</p>
                 </article>
@@ -269,31 +332,35 @@ export function HomePage() {
         </section>
 
         <section id="how" className="mx-auto max-w-6xl px-4 py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">How it works</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">How it works</p>
           <h2 className="mt-2 font-display text-3xl font-semibold text-ink-900">From request to closed trip</h2>
           <div className="mt-8 grid gap-4 md:grid-cols-4">
-            {steps.map((s) => (
-              <article key={s.n} className="rounded-2xl border border-ink-200 bg-white p-5">
-                <p className="font-display text-sm font-semibold text-brand-700">{s.n}</p>
+            {steps.map((s, i) => (
+              <article key={s.n} className="relative overflow-hidden rounded-2xl border border-ink-200 bg-white p-5">
+                <p className="font-display text-3xl font-semibold text-blue-100">{s.n}</p>
                 <h3 className="mt-2 font-semibold text-ink-900">{s.title}</h3>
                 <p className="mt-2 text-sm text-ink-600">{s.body}</p>
+                {i < steps.length - 1 ? (
+                  <span className="absolute right-3 top-6 hidden h-px w-8 bg-blue-200 md:block" />
+                ) : null}
               </article>
             ))}
           </div>
         </section>
 
-        <section id="portals" className="border-y border-ink-200 bg-ink-950 py-16 text-white">
-          <div className="mx-auto max-w-6xl px-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-300">Access</p>
+        <section id="portals" className="relative overflow-hidden bg-ink-950 py-16 text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.18),_transparent_55%)]" />
+          <div className="relative mx-auto max-w-6xl px-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-300">Access</p>
             <h2 className="mt-2 font-display text-3xl font-semibold">Login to the right workspace</h2>
-            <p className="mt-3 max-w-2xl text-ink-300">
+            <p className="mt-3 max-w-2xl text-slate-300">
               Use the same Login page. Your account type opens Admin, Driver, or Customer automatically.
             </p>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {portals.map((p) => (
-                <article key={p.title} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-6">
+                <article key={p.title} className={cn('flex flex-col rounded-2xl border border-white/10 bg-gradient-to-br p-6', p.accent)}>
                   <h3 className="font-display text-lg font-semibold">{p.title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-300">{p.body}</p>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-300">{p.body}</p>
                   <Link to={isAuthenticated ? dashboard : p.to} className="mt-5">
                     <Button variant="secondary" className="w-full border-white/20 bg-white text-ink-900">
                       {isAuthenticated ? 'Open dashboard' : p.cta}
@@ -306,9 +373,9 @@ export function HomePage() {
         </section>
 
         <section id="contact" className="mx-auto max-w-6xl px-4 py-16">
-          <div className="grid gap-8 rounded-3xl border border-ink-200 bg-white p-8 md:grid-cols-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Contact</p>
+          <div className="grid gap-8 overflow-hidden rounded-3xl border border-ink-200 bg-white shadow-[0_24px_60px_rgb(15_23_42_/_0.08)] md:grid-cols-2">
+            <div className="p-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Contact</p>
               <h2 className="mt-2 font-display text-3xl font-semibold text-ink-900">Talk to operations</h2>
               <p className="mt-3 text-ink-600">
                 For new contracts, tracking help, or billing questions, reach the control room. Admin can change this
@@ -316,33 +383,34 @@ export function HomePage() {
               </p>
               <div className="mt-6 space-y-3 text-sm">
                 <p className="flex items-center gap-2 text-ink-800">
-                  <Phone className="h-4 w-4 text-brand-600" />
+                  <Phone className="h-4 w-4 text-blue-600" />
                   {supportPhone}
                 </p>
                 <p className="flex items-center gap-2 text-ink-800">
-                  <Mail className="h-4 w-4 text-brand-600" />
+                  <Mail className="h-4 w-4 text-blue-600" />
                   {supportEmail}
                 </p>
-                {branding.gstin ? (
-                  <p className="text-ink-500">GSTIN {branding.gstin}</p>
-                ) : null}
+                {branding.gstin ? <p className="text-ink-500">GSTIN {branding.gstin}</p> : null}
               </div>
             </div>
-            <div className="flex flex-col justify-center rounded-2xl bg-ink-50 p-6">
-              <p className="font-display text-lg font-semibold text-ink-900">Ready to move a load?</p>
-              <p className="mt-2 text-sm text-ink-600">
+            <div className="flex flex-col justify-center bg-gradient-to-br from-blue-700 to-sky-500 p-8 text-white">
+              <Globe2 className="h-8 w-8 text-blue-100" />
+              <p className="mt-4 font-display text-2xl font-semibold">Ready to move a load?</p>
+              <p className="mt-2 text-sm text-blue-100">
                 Login if you already have an account. New shippers register, verify email OTP, and submit pickup and
                 delivery in full.
               </p>
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link to="/login">
-                  <Button>
+                  <Button variant="secondary" className="border-white/30 bg-white text-blue-800 hover:bg-blue-50">
                     <Navigation className="h-4 w-4" />
                     Login
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button variant="secondary">Register as customer</Button>
+                  <Button variant="secondary" className="border-white/30 bg-white/10 text-white hover:bg-white/20">
+                    Register as customer
+                  </Button>
                 </Link>
               </div>
             </div>
@@ -368,8 +436,8 @@ export function HomePage() {
 
 function Fact({ title, body }) {
   return (
-    <div className={cn('rounded-2xl border border-ink-200 bg-white p-5')}>
-      <MapPinned className="h-5 w-5 text-brand-600" />
+    <div className="rounded-2xl border border-ink-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+      <MapPinned className="h-5 w-5 text-blue-600" />
       <h3 className="mt-3 font-semibold text-ink-900">{title}</h3>
       <p className="mt-2 text-sm text-ink-600">{body}</p>
     </div>

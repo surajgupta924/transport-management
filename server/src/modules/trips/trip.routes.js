@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.js';
-import { requirePermission } from '../../middleware/rbac.js';
+import { requirePermission, requireAnyPermission } from '../../middleware/rbac.js';
 import { validate } from '../../middleware/validate.js';
 import * as ctrl from './trip.controller.js';
 import {
@@ -24,8 +24,8 @@ router.get('/:id', requirePermission('trips:view'), ctrl.getTrip);
 router.get('/:id/track', requirePermission('trips:view'), ctrl.getTripTrack);
 router.post('/:id/location', requirePermission('trips:edit'), validate(tripLocationSchema), ctrl.postTripLocation);
 router.post('/:id/sharing', requirePermission('trips:edit'), validate(tripSharingSchema), ctrl.setTripSharing);
-router.post('/:id/accept', requirePermission('trips:approve'), ctrl.acceptAssignment);
-router.post('/:id/reject', requirePermission('trips:approve'), validate(rejectAssignmentSchema), ctrl.rejectAssignment);
+router.post('/:id/accept', requireAnyPermission('trips:approve', 'trips:edit'), ctrl.acceptAssignment);
+router.post('/:id/reject', requireAnyPermission('trips:approve', 'trips:edit'), validate(rejectAssignmentSchema), ctrl.rejectAssignment);
 router.post('/:id/release', requirePermission('trips:assign'), ctrl.releaseAssignment);
 router.post('/', requirePermission('trips:create'), validate(createTripSchema), ctrl.createTrip);
 router.post('/:id/assign', requirePermission('trips:assign'), validate(assignTripSchema), ctrl.assignTrip);

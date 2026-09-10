@@ -12,20 +12,34 @@ export async function listPods(query, actor) {
   if (query.status) filter.status = query.status;
   if (query.tripId) filter.trip = query.tripId;
   if (query.bookingId) filter.booking = query.bookingId;
+  const extra = [];
   if (actor?.portalType === 'DRIVER') {
-    filter.uploadedBy = actor._id;
+    const driverId = actor.linkedDriver?._id || actor.linkedDriver;
+    const tripIds = driverId ? await Trip.find({ driver: driverId }).distinct('_id') : [];
+    extra.push({ $or: [{ uploadedBy: actor._id }, { trip: { $in: tripIds } }] });
   }
   if (search) {
-    filter.$or = [
-      { receiverName: new RegExp(search, 'i') },
-      { notes: new RegExp(search, 'i') },
-    ];
+    extra.push({
+      $or: [
+        { receiverName: new RegExp(search, 'i') },
+        { notes: new RegExp(search, 'i') },
+      ],
+    });
   }
+  if (extra.length === 1) Object.assign(filter, extra[0]);
+  else if (extra.length > 1) filter.$and = extra;
 
   const [items, total] = await Promise.all([
     PodRecord.find(filter)
-      .populate('trip', 'tripNumber status')
-      .populate('booking', 'bookingNumber')
+      .populate({
+        path: 'trip',
+        select: 'tripNumber status driver vehicle',
+        populate: [
+          { path: 'vehicle', select: 'registrationNumber' },
+          { path: 'driver', select: 'name mobile' },
+        ],
+      })
+      .populate('booking', 'bookingNumber shipmentNumber pickup delivery expectedDeliveryDate status')
       .populate('uploadedBy', 'name email')
       .populate('verifiedBy', 'name email')
       .sort(sort)
@@ -45,8 +59,15 @@ export async function listPods(query, actor) {
 
 export async function getPodById(id) {
   const pod = await PodRecord.findById(id)
-    .populate('trip', 'tripNumber status')
-    .populate('booking', 'bookingNumber')
+    .populate({
+      path: 'trip',
+      select: 'tripNumber status driver vehicle',
+      populate: [
+        { path: 'vehicle', select: 'registrationNumber' },
+        { path: 'driver', select: 'name mobile' },
+      ],
+    })
+    .populate('booking', 'bookingNumber shipmentNumber pickup delivery expectedDeliveryDate status')
     .populate('uploadedBy', 'name email')
     .populate('verifiedBy', 'name email');
   if (!pod) throw new ApiError(404, 'POD not found');

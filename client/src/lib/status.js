@@ -10,6 +10,7 @@ const WARNING = new Set([
   'UNASSIGNED',
   'OUT_FOR_DELIVERY',
   'POD_UPLOADED',
+  'PENDING_APPROVAL',
 ])
 const SUCCESS = new Set([
   'ACTIVE',
@@ -23,6 +24,7 @@ const SUCCESS = new Set([
   'CONFIRMED',
   'ACCEPTED',
   'VERIFIED',
+  'RELEASED',
 ])
 const DANGER = new Set([
   'CANCELLED',
