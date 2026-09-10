@@ -6,6 +6,18 @@ export const invoicesApi = apiSlice.injectEndpoints({
       query: (params) => ({ url: '/invoices', params }),
       providesTags: ['Invoices'],
     }),
+    getInvoiceSummary: builder.query({
+      query: () => '/invoices/summary',
+      providesTags: ['Invoices'],
+    }),
+    getInvoiceDesigner: builder.query({
+      query: () => '/invoices/designer',
+      providesTags: ['Invoices'],
+    }),
+    saveInvoiceDesigner: builder.mutation({
+      query: (body) => ({ url: '/invoices/designer', method: 'PUT', body }),
+      invalidatesTags: ['Invoices'],
+    }),
     getInvoice: builder.query({
       query: (id) => `/invoices/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Invoices', id }],
@@ -27,6 +39,9 @@ export const invoicesApi = apiSlice.injectEndpoints({
 
 export const {
   useGetInvoicesQuery,
+  useGetInvoiceSummaryQuery,
+  useGetInvoiceDesignerQuery,
+  useSaveInvoiceDesignerMutation,
   useGetInvoiceQuery,
   useCreateInvoiceMutation,
   useUpdateInvoiceMutation,

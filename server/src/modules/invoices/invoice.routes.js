@@ -9,6 +9,9 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', requirePermission('invoices:view'), ctrl.listInvoices);
+router.get('/summary', requirePermission('invoices:view'), ctrl.invoiceSummary);
+router.get('/designer', requirePermission('invoices:view'), ctrl.getDesigner);
+router.put('/designer', requirePermission('invoices:edit'), ctrl.saveDesigner);
 router.get('/:id', requirePermission('invoices:view'), ctrl.getInvoice);
 router.get('/:id/pdf', requirePermission('invoices:export'), ctrl.downloadPdf);
 router.post('/', requirePermission('invoices:create'), validate(createInvoiceSchema), ctrl.createInvoice);

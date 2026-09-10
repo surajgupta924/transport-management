@@ -25,6 +25,7 @@ const schema = z.object({
   fuelType: z.string().optional(),
   chassisNumber: z.string().optional(),
   engineNumber: z.string().optional(),
+  gpsDeviceId: z.string().optional(),
 })
 
 export function VehicleFormPage() {
@@ -56,6 +57,7 @@ export function VehicleFormPage() {
       fuelType: 'DIESEL',
       chassisNumber: '',
       engineNumber: '',
+      gpsDeviceId: '',
     },
   })
 
@@ -74,6 +76,7 @@ export function VehicleFormPage() {
       fuelType: v.fuelType || 'DIESEL',
       chassisNumber: v.chassisNumber || '',
       engineNumber: v.engineNumber || '',
+      gpsDeviceId: v.gpsDeviceId || '',
     })
   }, [data, reset])
 
@@ -90,6 +93,7 @@ export function VehicleFormPage() {
       fuelType: values.fuelType === 'EV' ? 'ELECTRIC' : values.fuelType,
       chassisNumber: values.chassisNumber,
       engineNumber: values.engineNumber,
+      gpsDeviceId: values.gpsDeviceId,
     }
     try {
       if (isEdit) {
@@ -152,6 +156,7 @@ export function VehicleFormPage() {
             </Select>
             <Input label="Chassis number" {...register('chassisNumber')} />
             <Input label="Engine number" {...register('engineNumber')} />
+            <Input label="GPS Device ID / IMEI" hint="Used by the GPS provider webhook" {...register('gpsDeviceId')} />
           </CardBody>
         </Card>
         <div className="flex justify-end">

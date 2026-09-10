@@ -6,6 +6,10 @@ export const bookingsApi = apiSlice.injectEndpoints({
       query: (params) => ({ url: '/bookings', params }),
       providesTags: ['Bookings'],
     }),
+    getBookingStats: builder.query({
+      query: () => '/bookings/stats',
+      providesTags: ['Bookings'],
+    }),
     getBooking: builder.query({
       query: (id) => `/bookings/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Bookings', id }],
@@ -27,6 +31,7 @@ export const bookingsApi = apiSlice.injectEndpoints({
 
 export const {
   useGetBookingsQuery,
+  useGetBookingStatsQuery,
   useGetBookingQuery,
   useCreateBookingMutation,
   useUpdateBookingMutation,

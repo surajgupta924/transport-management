@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', requirePermission('bookings:view'), ctrl.listBookings);
+router.get('/stats', requirePermission('bookings:view'), ctrl.bookingStats);
 router.get('/:id', requirePermission('bookings:view'), ctrl.getBooking);
 router.post('/', requirePermission('bookings:create'), validate(createBookingSchema), ctrl.createBooking);
 router.patch('/:id', requirePermission('bookings:edit'), validate(updateBookingSchema), ctrl.updateBooking);

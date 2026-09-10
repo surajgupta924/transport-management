@@ -33,3 +33,18 @@ export const downloadPdf = asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="invoice-${req.params.id}.pdf"`);
   return res.send(buffer);
 });
+
+export const invoiceSummary = asyncHandler(async (_req, res) => {
+  const data = await invoiceService.getInvoiceSummary();
+  return sendSuccess(res, { message: 'Invoice summary', data });
+});
+
+export const getDesigner = asyncHandler(async (_req, res) => {
+  const data = await invoiceService.getDesigner();
+  return sendSuccess(res, { message: 'Invoice designer', data });
+});
+
+export const saveDesigner = asyncHandler(async (req, res) => {
+  const data = await invoiceService.saveDesigner(req.body, req.user, req);
+  return sendSuccess(res, { message: 'Invoice designer saved', data });
+});

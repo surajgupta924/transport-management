@@ -1,50 +1,38 @@
-import { useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { useCreatePaymentMutation, useGetPaymentsQuery } from './paymentsApi'
+import { useCreatePaymentMutation, useGetPaymentSummaryQuery, useGetPaymentsQuery } from './paymentsApi'
+import { useGetInvoicesQuery } from '../invoices/invoicesApi'
 import { PageHeader } from '../../components/common/PageHeader'
 import { Pagination } from '../../components/common/Pagination'
-import { StatusBadge } from '../../components/common/StatusBadge'
 import { EmptyState, TableSkeleton } from '../../components/common/EmptyState'
-import { Card, CardBody, CardHeader } from '../../components/ui/Card'
+import { Card, CardBody } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
+import { Modal, StatCard } from '../../components/ui/OpsUi'
 import { useToast } from '../../components/ui/Toast'
-import { getErrorMessage } from '../../lib/utils'
+import { formatMoney, getErrorMessage } from '../../lib/utils'
 import { Can } from '../../hooks/usePermission'
-
-const schema = z.object({
-  customerId: z.string().min(1),
-  invoiceId: z.string().optional(),
-  amount: z.coerce.number().positive(),
-  method: z.enum(['CASH', 'UPI', 'NEFT', 'CHEQUE', 'CARD']),
-  reference: z.string().optional(),
-  paidAt: z.string().optional(),
-})
 
 export function PaymentsPage() {
   const toast = useToast()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [showForm, setShowForm] = useState(false)
-  const queryArgs = useMemo(() => ({ page, limit: 10, search: search || undefined }), [page, search])
-  const { data, isLoading, isFetching } = useGetPaymentsQuery(queryArgs)
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ invoiceId: '', amount: 0, method: 'UPI', reference: '', paidAt: '' })
+  const { data, isLoading } = useGetPaymentsQuery({ page, limit: 10 })
+  const { data: summaryData } = useGetPaymentSummaryQuery()
+  const { data: invoicesData } = useGetInvoicesQuery({ limit: 100 })
   const [createPayment, { isLoading: creating }] = useCreatePaymentMutation()
   const rows = data?.data || []
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: { customerId: '', invoiceId: '', amount: 0, method: 'UPI', reference: '', paidAt: '' },
-  })
+  const summary = summaryData?.data || {}
+  const invoices = (invoicesData?.data || []).filter((inv) => ['ISSUED', 'PARTIAL', 'OVERDUE'].includes(inv.status) && (inv.amountDue || 0) > 0)
 
-  const onCreate = async (values) => {
+  const save = async () => {
     try {
-      await createPayment(values).unwrap()
+      await createPayment({ ...form, amount: Number(form.amount), paidAt: form.paidAt || undefined }).unwrap()
       toast.success('Payment recorded')
-      reset()
-      setShowForm(false)
+      setOpen(false)
     } catch (err) {
       toast.error(getErrorMessage(err))
     }
@@ -53,73 +41,71 @@ export function PaymentsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-4">
       <PageHeader
+        eyebrow="BILLING & COLLECTIONS"
         title="Payments"
-        description="Incoming payment collection"
-        action={
-          <Can permission="payments:create">
-            <Button onClick={() => setShowForm((v) => !v)}>
-              <Plus className="h-4 w-4" />
-              {showForm ? 'Close' : 'Record payment'}
-            </Button>
-          </Can>
-        }
+        description="Record invoice collections, manage payment history, and track outstanding balances in real time."
+        action={<Can permission="payments:create"><Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Record Payment</Button></Can>}
       />
-      {showForm && (
-        <Card>
-          <CardHeader title="New payment" />
-          <CardBody>
-            <form onSubmit={handleSubmit(onCreate)} className="grid gap-4 md:grid-cols-2" noValidate>
-              <Input label="Customer ID" required error={errors.customerId?.message} {...register('customerId')} />
-              <Input label="Invoice ID" {...register('invoiceId')} />
-              <Input label="Amount" type="number" required {...register('amount')} />
-              <Select label="Method" {...register('method')}>
-                <option value="UPI">UPI</option>
-                <option value="NEFT">NEFT</option>
-                <option value="CASH">Cash</option>
-                <option value="CHEQUE">Cheque</option>
-                <option value="CARD">Card</option>
-              </Select>
-              <Input label="Reference" {...register('reference')} />
-              <Input label="Paid at" type="datetime-local" {...register('paidAt')} />
-              <div className="md:col-span-2"><Button type="submit" loading={creating}>Save payment</Button></div>
-            </form>
-          </CardBody>
-        </Card>
-      )}
+      <div className="grid gap-3 sm:grid-cols-4">
+        <StatCard label="Total payments" value={summary.totalPayments || 0} />
+        <StatCard label="Collected" value={formatMoney(summary.collected)} tone="green" />
+        <StatCard label="Outstanding invoices" value={summary.outstandingInvoices || 0} tone="amber" />
+        <StatCard label="Outstanding" value={formatMoney(summary.outstanding)} tone="violet" />
+      </div>
       <Card>
-        <CardHeader title="Payment history" action={<Input placeholder="Search..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value) }} className="w-48" />} />
         <CardBody className="p-0">
           {isLoading ? <TableSkeleton /> : rows.length === 0 ? (
-            <EmptyState title="No payments" description="Record a payment against an invoice." />
+            <EmptyState title="There are no payment records yet" description="Select an outstanding invoice to record the first collection." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-ink-100 bg-ink-50/80 text-xs uppercase tracking-wide text-ink-500">
-                  <tr>
-                    <th className="px-5 py-3 font-medium">Customer</th>
-                    <th className="px-5 py-3 font-medium">Amount</th>
-                    <th className="px-5 py-3 font-medium">Method</th>
-                    <th className="px-5 py-3 font-medium">When</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
+            <table className="min-w-full text-sm">
+              <thead className="bg-ink-50 text-xs uppercase text-ink-500">
+                <tr>
+                  <th className="px-4 py-3 text-left">Date</th>
+                  <th className="px-4 py-3 text-left">Invoice</th>
+                  <th className="px-4 py-3 text-left">Customer</th>
+                  <th className="px-4 py-3 text-left">Method</th>
+                  <th className="px-4 py-3 text-left">Reference</th>
+                  <th className="px-4 py-3 text-left">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((p) => (
+                  <tr key={p._id} className="border-t border-ink-50">
+                    <td className="px-4 py-3">{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : '—'}</td>
+                    <td className="px-4 py-3">{p.invoice?.invoiceNumber}</td>
+                    <td className="px-4 py-3">{p.customer?.name}</td>
+                    <td className="px-4 py-3">{p.method}</td>
+                    <td className="px-4 py-3">{p.reference || '—'}</td>
+                    <td className="px-4 py-3 font-medium">{formatMoney(p.amount)}</td>
                   </tr>
-                </thead>
-                <tbody className={isFetching ? 'opacity-60' : ''}>
-                  {rows.map((r) => (
-                    <tr key={r._id} className="border-b border-ink-50">
-                      <td className="px-5 py-3 font-medium">{r.customer?.name || '—'}</td>
-                      <td className="px-5 py-3">{r.amount}</td>
-                      <td className="px-5 py-3">{r.method}</td>
-                      <td className="px-5 py-3">{r.paidAt ? new Date(r.paidAt).toLocaleString() : '—'}</td>
-                      <td className="px-5 py-3"><StatusBadge status={r.status || 'PAID'} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
           <Pagination meta={data?.meta} onPageChange={setPage} />
         </CardBody>
       </Card>
+      <Modal open={open} title="Record Payment" onClose={() => setOpen(false)}>
+        <div className="grid gap-3">
+          <Select label="Outstanding invoice" value={form.invoiceId} onChange={(e) => {
+            const inv = invoices.find((i) => i._id === e.target.value)
+            setForm((s) => ({ ...s, invoiceId: e.target.value, amount: inv?.amountDue || inv?.total || 0 }))
+          }}>
+            <option value="">Select invoice</option>
+            {invoices.map((inv) => <option key={inv._id} value={inv._id}>{inv.invoiceNumber} · due {formatMoney(inv.amountDue)}</option>)}
+          </Select>
+          <Input label="Amount" type="number" value={form.amount} onChange={(e) => setForm((s) => ({ ...s, amount: e.target.value }))} />
+          <Select label="Method" value={form.method} onChange={(e) => setForm((s) => ({ ...s, method: e.target.value }))}>
+            {['UPI', 'CASH', 'NEFT', 'CHEQUE', 'CARD'].map((m) => <option key={m}>{m}</option>)}
+          </Select>
+          <Input label="Reference" value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} />
+          <Input label="Payment date" type="date" value={form.paidAt} onChange={(e) => setForm((s) => ({ ...s, paidAt: e.target.value }))} />
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button loading={creating} onClick={save}>Save</Button>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -21,6 +21,13 @@ import { BookingDetailPage } from '../features/bookings/BookingDetailPage'
 import { TripsPage } from '../features/trips/TripsPage'
 import { TripDetailPage } from '../features/trips/TripDetailPage'
 import { TrackingPage, TrackingIndexPage } from '../features/tracking/TrackingPage'
+import { GpsPage } from '../features/gps/GpsPage'
+import { LoadingStaffPage } from '../features/loading-staff/LoadingStaffPage'
+import { HiredVehiclesPage } from '../features/hired-vehicles/HiredVehiclesPage'
+import { ShipmentsPage } from '../features/shipments/ShipmentsPage'
+import { AssignmentsPage } from '../features/operations/AssignmentsPage'
+import { ActiveTripsPage } from '../features/operations/ActiveTripsPage'
+import { InvoiceDesignerPage } from '../features/invoices/InvoiceDesignerPage'
 import { FuelPage } from '../features/fuel/FuelPage'
 import { MaintenancePage } from '../features/maintenance/MaintenancePage'
 import { ExpensesPage } from '../features/expenses/ExpensesPage'
@@ -103,12 +110,24 @@ export function AppRouter() {
                 <Route path="bookings/new" element={<BookingFormPage />} />
                 <Route path="bookings/:id" element={<BookingDetailPage />} />
                 <Route path="bookings/:id/edit" element={<BookingFormPage />} />
+                <Route path="shipments" element={<ShipmentsPage />} />
               </Route>
               <Route element={<RequirePermission permission="trips:view" />}>
                 <Route path="trips" element={<TripsPage />} />
                 <Route path="trips/:id" element={<TripDetailPage />} />
                 <Route path="tracking" element={<TrackingIndexPage />} />
                 <Route path="tracking/:tripId" element={<TrackingPage />} />
+                <Route path="assignments" element={<AssignmentsPage />} />
+                <Route path="active-trips" element={<ActiveTripsPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="loadingStaff:view" />}>
+                <Route path="loading-staff" element={<LoadingStaffPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="hiredVehicles:view" />}>
+                <Route path="hired-vehicles" element={<HiredVehiclesPage />} />
+              </Route>
+              <Route element={<RequirePermission permission="gps:view" />}>
+                <Route path="gps" element={<GpsPage />} />
               </Route>
               <Route element={<RequirePermission permission="fuel:view" />}>
                 <Route path="fuel" element={<FuelPage />} />
@@ -126,6 +145,7 @@ export function AppRouter() {
               <Route element={<RequirePermission permission="invoices:view" />}>
                 <Route path="invoices" element={<InvoicesPage />} />
                 <Route path="invoices/:id" element={<InvoiceDetailPage />} />
+                <Route path="invoice-designer" element={<InvoiceDesignerPage />} />
               </Route>
               <Route element={<RequirePermission permission="payments:view" />}>
                 <Route path="payments" element={<PaymentsPage />} />

@@ -163,6 +163,7 @@ export async function createTrip(payload, actor, req) {
     tripData.driver = driver._id;
     tripData.startKm = payload.startKm ?? vehicle.currentKm ?? 0;
     tripData.status = 'ASSIGNED';
+    tripData.assignmentStatus = 'ASSIGNED';
   }
 
   const trip = await Trip.create(tripData);
@@ -170,7 +171,7 @@ export async function createTrip(payload, actor, req) {
   if (trip.status === 'ASSIGNED') {
     await Vehicle.findByIdAndUpdate(trip.vehicle, { status: 'ON_TRIP' });
     await Driver.findByIdAndUpdate(trip.driver, { status: 'ON_TRIP' });
-    if (['DRAFT', 'CONFIRMED'].includes(booking.status)) {
+    if (['DRAFT', 'CONFIRMED', 'UNASSIGNED', 'PENDING'].includes(booking.status)) {
       booking.status = 'ASSIGNED';
     }
   }
@@ -216,13 +217,14 @@ export async function assignTrip(id, payload, actor, req) {
   trip.helper = payload.helper || trip.helper;
   trip.startKm = payload.startKm ?? vehicle.currentKm ?? trip.startKm;
   trip.status = 'ASSIGNED';
+  trip.assignmentStatus = 'ASSIGNED';
   await trip.save();
 
   await Vehicle.findByIdAndUpdate(vehicle._id, { status: 'ON_TRIP' });
   await Driver.findByIdAndUpdate(driver._id, { status: 'ON_TRIP' });
 
   const booking = await Booking.findById(trip.booking);
-  if (booking && ['DRAFT', 'CONFIRMED'].includes(booking.status)) {
+  if (booking && ['DRAFT', 'CONFIRMED', 'UNASSIGNED', 'PENDING'].includes(booking.status)) {
     booking.status = 'ASSIGNED';
     await booking.save();
   }
@@ -343,6 +345,136 @@ export async function transitionTrip(id, { status, endKm, reason }, actor, req) 
     description: `${actor.email} changed trip ${trip.tripNumber} ${oldStatus} → ${status}`,
     oldValue: { status: oldStatus },
     newValue: { status },
+    req,
+  });
+  return getTripById(trip._id);
+}
+
+export async function assignmentBoard() {
+  const [readyShipments, pendingApproval, availableVehicles, availableDrivers, assignments] = await Promise.all([
+    Booking.countDocuments({ status: { $in: ['UNASSIGNED', 'CONFIRMED'] } }),
+    Booking.countDocuments({ status: 'PENDING' }),
+    Vehicle.countDocuments({ status: 'AVAILABLE' }),
+    Driver.countDocuments({ status: 'AVAILABLE' }),
+    Trip.find({ status: { $nin: ['CANCELLED'] } })
+      .populate({
+        path: 'booking',
+        select: 'bookingNumber shipmentNumber status pickup delivery',
+      })
+      .populate('vehicle', 'registrationNumber type')
+      .populate('driver', 'name mobile')
+      .sort({ updatedAt: -1 })
+      .limit(50),
+  ]);
+
+  const presented = assignments.map((trip) => {
+    const obj = trip.toObject();
+    if (obj.booking) obj.booking = presentBooking(obj.booking);
+    return obj;
+  });
+
+  return {
+    readyShipments,
+    pendingApproval,
+    availableVehicles,
+    availableDrivers,
+    assignments: presented,
+  };
+}
+
+export async function assignShipment(payload, actor, req) {
+  const booking = await Booking.findById(payload.bookingId);
+  if (!booking) throw new ApiError(400, 'Invalid shipment');
+  if (['CANCELLED', 'COMPLETED'].includes(booking.status)) {
+    throw new ApiError(400, `Cannot assign ${booking.status} shipment`);
+  }
+  if (booking.trip) {
+    const existing = await Trip.findById(booking.trip);
+    if (existing && existing.status !== 'CANCELLED' && existing.assignmentStatus !== 'RELEASED') {
+      return assignTrip(existing._id, payload, actor, req);
+    }
+  }
+  return createTrip(
+    {
+      bookingId: booking._id,
+      vehicleId: payload.vehicleId,
+      driverId: payload.driverId,
+      startKm: payload.startKm,
+      notes: payload.notes,
+    },
+    actor,
+    req
+  );
+}
+
+export async function acceptAssignment(id, actor, req) {
+  const trip = await Trip.findById(id);
+  if (!trip) throw new ApiError(404, 'Trip not found');
+  if (trip.status !== 'ASSIGNED' && trip.assignmentStatus !== 'ASSIGNED') {
+    throw new ApiError(400, 'Only assigned trips can be accepted');
+  }
+  trip.assignmentStatus = 'ACCEPTED';
+  trip.acceptedAt = new Date();
+  await trip.save();
+  await writeAuditLog({
+    actor,
+    module: 'trips',
+    entity: 'Trip',
+    entityId: trip._id,
+    action: 'ACCEPT',
+    description: `${actor.email} accepted assignment ${trip.tripNumber}`,
+    req,
+  });
+  return getTripById(trip._id);
+}
+
+export async function rejectAssignment(id, { reason } = {}, actor, req) {
+  const trip = await Trip.findById(id);
+  if (!trip) throw new ApiError(404, 'Trip not found');
+  trip.assignmentStatus = 'REJECTED';
+  trip.rejectedAt = new Date();
+  trip.status = 'CANCELLED';
+  trip.notes = [trip.notes, reason].filter(Boolean).join(' | ');
+  if (trip.vehicle) await Vehicle.findByIdAndUpdate(trip.vehicle, { status: 'AVAILABLE' });
+  if (trip.driver) await Driver.findByIdAndUpdate(trip.driver, { status: 'AVAILABLE' });
+  const booking = await Booking.findById(trip.booking);
+  if (booking && booking.status === 'ASSIGNED') {
+    booking.status = 'UNASSIGNED';
+    booking.trip = undefined;
+    await booking.save();
+  }
+  await trip.save();
+  await writeAuditLog({
+    actor,
+    module: 'trips',
+    entity: 'Trip',
+    entityId: trip._id,
+    action: 'REJECT',
+    description: `${actor.email} rejected assignment ${trip.tripNumber}`,
+    req,
+  });
+  return getTripById(trip._id);
+}
+
+export async function releaseAssignment(id, actor, req) {
+  const trip = await Trip.findById(id);
+  if (!trip) throw new ApiError(404, 'Trip not found');
+  trip.assignmentStatus = 'RELEASED';
+  trip.releasedAt = new Date();
+  if (['ASSIGNED', 'STARTED', 'IN_TRANSIT', 'IN_PROGRESS', 'OUT_FOR_DELIVERY'].includes(trip.status)) {
+    if (!['COMPLETED', 'CANCELLED'].includes(trip.status)) trip.status = 'COMPLETED';
+  }
+  if (trip.vehicle) await Vehicle.findByIdAndUpdate(trip.vehicle, { status: 'AVAILABLE' });
+  if (trip.driver) await Driver.findByIdAndUpdate(trip.driver, { status: 'AVAILABLE' });
+  trip.locationSharing = false;
+  await trip.save();
+  await writeAuditLog({
+    actor,
+    module: 'trips',
+    entity: 'Trip',
+    entityId: trip._id,
+    action: 'RELEASE',
+    description: `${actor.email} released assignment ${trip.tripNumber}`,
     req,
   });
   return getTripById(trip._id);

@@ -7,19 +7,21 @@ export const TRIP_STATUSES = [
   'STARTED',
   'IN_PROGRESS',
   'IN_TRANSIT',
+  'OUT_FOR_DELIVERY',
   'COMPLETED',
   'CANCELLED',
 ];
 
-export const ACTIVE_TRIP_STATUSES = ['ASSIGNED', 'STARTED', 'IN_PROGRESS', 'IN_TRANSIT'];
+export const ACTIVE_TRIP_STATUSES = ['ASSIGNED', 'STARTED', 'IN_PROGRESS', 'IN_TRANSIT', 'OUT_FOR_DELIVERY'];
 
 export const TRIP_TRANSITIONS = {
   PLANNED: ['ASSIGNED', 'CANCELLED'],
   PENDING: ['ASSIGNED', 'CANCELLED'],
   ASSIGNED: ['STARTED', 'CANCELLED'],
-  STARTED: ['IN_TRANSIT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
-  IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
-  IN_TRANSIT: ['COMPLETED', 'CANCELLED'],
+  STARTED: ['IN_TRANSIT', 'IN_PROGRESS', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+  IN_PROGRESS: ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+  IN_TRANSIT: ['OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED'],
+  OUT_FOR_DELIVERY: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -63,6 +65,15 @@ const tripSchema = new mongoose.Schema(
       updatedAt: Date,
     },
     locationSharing: { type: Boolean, default: false },
+    assignmentStatus: {
+      type: String,
+      enum: ['PENDING_APPROVAL', 'ASSIGNED', 'ACCEPTED', 'REJECTED', 'RELEASED'],
+      default: 'PENDING_APPROVAL',
+      index: true,
+    },
+    acceptedAt: Date,
+    rejectedAt: Date,
+    releasedAt: Date,
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

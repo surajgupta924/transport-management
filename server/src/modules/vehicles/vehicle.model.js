@@ -36,6 +36,8 @@ const vehicleSchema = new mongoose.Schema(
       index: true,
     },
     branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+    gpsDeviceId: { type: String, trim: true, uppercase: true, sparse: true, unique: true },
+    ownership: { type: String, enum: ['OWNED', 'HIRED'], default: 'OWNED', index: true },
     notes: { type: String, default: '' },
     nextServiceKm: { type: Number },
     nextServiceDate: Date,

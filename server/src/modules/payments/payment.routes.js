@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', requirePermission('payments:view'), ctrl.listPayments);
+router.get('/summary', requirePermission('payments:view'), ctrl.paymentSummary);
 router.get('/:id', requirePermission('payments:view'), ctrl.getPayment);
 router.post('/', requirePermission('payments:create'), validate(createPaymentSchema), ctrl.createPayment);
 

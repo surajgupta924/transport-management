@@ -58,3 +58,28 @@ export const setTripSharing = asyncHandler(async (req, res) => {
   const trip = await trackingService.setLocationSharing(req.params.id, req.body.sharing);
   return sendSuccess(res, { message: trip.locationSharing ? 'Live GPS on' : 'Live GPS off', data: trip });
 });
+
+export const assignmentBoard = asyncHandler(async (_req, res) => {
+  const data = await tripService.assignmentBoard();
+  return sendSuccess(res, { message: 'Assignment board', data });
+});
+
+export const assignShipment = asyncHandler(async (req, res) => {
+  const trip = await tripService.assignShipment(req.body, req.user, req);
+  return sendSuccess(res, { status: 201, message: 'Shipment assigned', data: trip });
+});
+
+export const acceptAssignment = asyncHandler(async (req, res) => {
+  const trip = await tripService.acceptAssignment(req.params.id, req.user, req);
+  return sendSuccess(res, { message: 'Assignment accepted', data: trip });
+});
+
+export const rejectAssignment = asyncHandler(async (req, res) => {
+  const trip = await tripService.rejectAssignment(req.params.id, req.body, req.user, req);
+  return sendSuccess(res, { message: 'Assignment rejected', data: trip });
+});
+
+export const releaseAssignment = asyncHandler(async (req, res) => {
+  const trip = await tripService.releaseAssignment(req.params.id, req.user, req);
+  return sendSuccess(res, { message: 'Assignment released', data: trip });
+});

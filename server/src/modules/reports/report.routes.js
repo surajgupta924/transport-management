@@ -16,6 +16,7 @@ router.get('/trips', requirePermission('reports:view'), ctrl.operations);
 router.get('/revenue', requirePermission('reports:view'), ctrl.finance);
 router.get('/expenses', requirePermission('reports:view'), ctrl.finance);
 router.get('/operations/export', requirePermission('reports:export'), ctrl.exportOperations);
+router.get('/business', requirePermission('reports:view'), ctrl.business);
 router.get('/bookings/export', requirePermission('reports:export'), ctrl.exportOperations);
 router.get('/trips/export', requirePermission('reports:export'), ctrl.exportOperations);
 router.get('/revenue/export', requirePermission('reports:export'), ctrl.exportOperations);

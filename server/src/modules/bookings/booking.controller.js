@@ -7,6 +7,11 @@ export const listBookings = asyncHandler(async (req, res) => {
   return sendSuccess(res, { message: 'Bookings fetched', data: result.items, meta: result.meta });
 });
 
+export const bookingStats = asyncHandler(async (req, res) => {
+  const data = await bookingService.getBookingStats(req.user);
+  return sendSuccess(res, { message: 'Shipment stats', data });
+});
+
 export const getBooking = asyncHandler(async (req, res) => {
   const booking = await bookingService.getBookingById(req.params.id);
   return sendSuccess(res, { message: 'Booking fetched', data: booking });

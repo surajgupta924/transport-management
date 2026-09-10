@@ -214,3 +214,79 @@ export async function exportOperationsCsv(query = {}) {
     { header: 'Revenue', value: (r) => r.revenue },
   ]);
 }
+
+export async function businessReport(query = {}) {
+  const match = dateRange(query);
+  const bookingMatch = Object.keys(match).length ? match : {};
+  const [totalShipments, delivered, inTransit, weightAgg, invoices, payments, routes] = await Promise.all([
+    Booking.countDocuments(bookingMatch),
+    Booking.countDocuments({ ...bookingMatch, status: { $in: ['DELIVERED', 'COMPLETED'] } }),
+    Booking.countDocuments({ ...bookingMatch, status: 'IN_TRANSIT' }),
+    Booking.aggregate([
+      ...(Object.keys(bookingMatch).length ? [{ $match: bookingMatch }] : []),
+      { $group: { _id: null, weight: { $sum: { $ifNull: ['$cargo.weightKg', 0] } } } },
+    ]),
+    Invoice.aggregate([
+      ...(query.from || query.to
+        ? [{ $match: { issueDate: { ...(query.from ? { $gte: new Date(query.from) } : {}), ...(query.to ? { $lte: new Date(query.to) } : {}) } } }]
+        : []),
+      { $group: { _id: null, total: { $sum: '$total' }, collected: { $sum: '$amountPaid' }, count: { $sum: 1 } } },
+    ]),
+    Payment.aggregate([
+      ...(query.from || query.to
+        ? [{ $match: { paidAt: { ...(query.from ? { $gte: new Date(query.from) } : {}), ...(query.to ? { $lte: new Date(query.to) } : {}) } } }]
+        : []),
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]),
+    Booking.aggregate([
+      ...(Object.keys(bookingMatch).length ? [{ $match: bookingMatch }] : []),
+      {
+        $group: {
+          _id: {
+            from: '$pickup.address.city',
+            to: '$delivery.address.city',
+          },
+          shipments: { $sum: 1 },
+          delivered: {
+            $sum: { $cond: [{ $in: ['$status', ['DELIVERED', 'COMPLETED']] }, 1, 0] },
+          },
+        },
+      },
+      { $sort: { shipments: -1 } },
+      { $limit: 8 },
+    ]),
+  ]);
+
+  const statusRows = await Booking.aggregate([
+    ...(Object.keys(bookingMatch).length ? [{ $match: bookingMatch }] : []),
+    { $group: { _id: '$status', count: { $sum: 1 } } },
+  ]);
+  const invoiced = invoices[0]?.total || 0;
+  const collected = payments[0]?.total || invoices[0]?.collected || 0;
+  const active = await Booking.countDocuments({
+    ...bookingMatch,
+    status: { $in: ['PENDING', 'UNASSIGNED', 'CONFIRMED', 'ASSIGNED'] },
+  });
+
+  return {
+    totals: {
+      totalShipments,
+      delivered,
+      inTransit,
+      totalWeight: weightAgg[0]?.weight || 0,
+      invoiced,
+      collected,
+      outstanding: Math.max(0, invoiced - collected),
+      active,
+      invoiceCount: invoices[0]?.count || 0,
+    },
+    status: statusRows,
+    topRoutes: routes.map((r) => ({
+      from: r._id?.from || '—',
+      to: r._id?.to || '—',
+      shipments: r.shipments,
+      delivered: r.delivered,
+      deliveryRate: r.shipments ? Math.round((r.delivered / r.shipments) * 100) : 0,
+    })),
+  };
+}

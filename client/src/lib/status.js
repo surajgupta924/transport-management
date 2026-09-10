@@ -1,3 +1,16 @@
+const WARNING = new Set([
+  'PENDING',
+  'ASSIGNED',
+  'IN_PROGRESS',
+  'PARTIAL',
+  'DUE',
+  'OPEN',
+  'SCHEDULED',
+  'DRAFT',
+  'UNASSIGNED',
+  'OUT_FOR_DELIVERY',
+  'POD_UPLOADED',
+])
 const SUCCESS = new Set([
   'ACTIVE',
   'AVAILABLE',
@@ -8,16 +21,8 @@ const SUCCESS = new Set([
   'RESOLVED',
   'CLOSED',
   'CONFIRMED',
-])
-const WARNING = new Set([
-  'PENDING',
-  'ASSIGNED',
-  'IN_PROGRESS',
-  'PARTIAL',
-  'DUE',
-  'OPEN',
-  'SCHEDULED',
-  'DRAFT',
+  'ACCEPTED',
+  'VERIFIED',
 ])
 const DANGER = new Set([
   'CANCELLED',

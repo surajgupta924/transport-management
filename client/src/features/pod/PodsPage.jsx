@@ -1,50 +1,37 @@
 import { useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus } from 'lucide-react'
-import { useCreatePodMutation, useGetPodsQuery } from './podApi'
+import { Link } from 'react-router-dom'
+import { RefreshCw } from 'lucide-react'
+import { useGetPodsQuery, useVerifyPodMutation } from './podApi'
 import { PageHeader } from '../../components/common/PageHeader'
-import { Pagination } from '../../components/common/Pagination'
 import { StatusBadge } from '../../components/common/StatusBadge'
+import { Pagination } from '../../components/common/Pagination'
 import { EmptyState, TableSkeleton } from '../../components/common/EmptyState'
-import { Card, CardBody, CardHeader } from '../../components/ui/Card'
+import { Card, CardBody } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { Textarea } from '../../components/ui/Textarea'
+import { Select } from '../../components/ui/Select'
+import { StatCard } from '../../components/ui/OpsUi'
 import { useToast } from '../../components/ui/Toast'
 import { getErrorMessage } from '../../lib/utils'
-import { Can } from '../../hooks/usePermission'
-
-const schema = z.object({
-  tripId: z.string().min(1),
-  bookingId: z.string().optional(),
-  receivedBy: z.string().min(2),
-  deliveredAt: z.string().optional(),
-  remarks: z.string().optional(),
-  photoUrl: z.string().url().optional().or(z.literal('')),
-})
 
 export function PodsPage() {
   const toast = useToast()
   const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
-  const [showForm, setShowForm] = useState(false)
-  const queryArgs = useMemo(() => ({ page, limit: 10, search: search || undefined }), [page, search])
-  const { data, isLoading, isFetching } = useGetPodsQuery(queryArgs)
-  const [createPod, { isLoading: creating }] = useCreatePodMutation()
+  const queryArgs = useMemo(() => ({ page, limit: 10, search: search || undefined, status: status || undefined }), [page, search, status])
+  const { data, isLoading, refetch } = useGetPodsQuery(queryArgs)
+  const [verifyPod] = useVerifyPodMutation()
   const rows = data?.data || []
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: { tripId: '', bookingId: '', receivedBy: '', deliveredAt: '', remarks: '', photoUrl: '' },
-  })
+  const reached = rows.filter((r) => r.status === 'PENDING').length
+  const uploaded = rows.filter((r) => r.status === 'UPLOADED').length
+  const review = uploaded
+  const completed = rows.filter((r) => r.status === 'VERIFIED').length
 
-  const onCreate = async (values) => {
+  const act = async (id, next, reason) => {
     try {
-      await createPod({ ...values, photoUrl: values.photoUrl || undefined }).unwrap()
-      toast.success('POD created')
-      reset()
-      setShowForm(false)
+      await verifyPod({ id, status: next, reason }).unwrap()
+      toast.success(next === 'VERIFIED' ? 'POD approved' : 'POD rejected')
     } catch (err) {
       toast.error(getErrorMessage(err))
     }
@@ -53,61 +40,77 @@ export function PodsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-4">
       <PageHeader
-        title="Proof of Delivery"
-        description="Delivery confirmations and recipient details"
-        action={
-          <Can permission="pod:create">
-            <Button onClick={() => setShowForm((v) => !v)}>
-              <Plus className="h-4 w-4" />
-              {showForm ? 'Close' : 'Add POD'}
-            </Button>
-          </Can>
-        }
+        eyebrow="STEP 5 · FINAL DELIVERY"
+        title="Delivery Closure & POD"
+        description="POD upload, verification, and automatic trip closure after GPS arrival."
+        action={<div className="flex gap-2"><Button variant="secondary" onClick={() => refetch()}><RefreshCw className="h-4 w-4" /> Refresh</Button><Link to="/app/tracking"><Button>Open Live Tracking</Button></Link></div>}
       />
-      {showForm && (
-        <Card>
-          <CardHeader title="Capture POD" />
-          <CardBody>
-            <form onSubmit={handleSubmit(onCreate)} className="grid gap-4 md:grid-cols-2" noValidate>
-              <Input label="Trip ID" required error={errors.tripId?.message} {...register('tripId')} />
-              <Input label="Booking ID" {...register('bookingId')} />
-              <Input label="Received by" required error={errors.receivedBy?.message} {...register('receivedBy')} />
-              <Input label="Delivered at" type="datetime-local" {...register('deliveredAt')} />
-              <Input label="Photo URL" className="md:col-span-2" error={errors.photoUrl?.message} {...register('photoUrl')} />
-              <Textarea label="Remarks" className="md:col-span-2" {...register('remarks')} />
-              <div className="md:col-span-2"><Button type="submit" loading={creating}>Save POD</Button></div>
-            </form>
-          </CardBody>
-        </Card>
-      )}
+      <div className="grid gap-3 md:grid-cols-4">
+        {[
+          ['1', 'GPS Delivery Reached', 'The destination will be marked as reached automatically after the required dwell time within the delivery geofence.'],
+          ['2', 'Driver Upload POD', 'The driver uploads a signed receipt, delivery photo, or PDF; available GPS proof is also captured.'],
+          ['3', 'Admin Verify POD', 'The administrator reviews the file and location proof, then approves it or rejects it with a reason.'],
+          ['4', 'System Complete', 'Upon approval, the delivery is completed, GPS tracking stops, and the vehicle and driver are released automatically.'],
+        ].map(([n, title, body]) => (
+          <div key={n} className="rounded-2xl bg-white p-4 shadow-sm">
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">{n}</div>
+            <p className="font-medium text-ink-900">{title}</p>
+            <p className="mt-1 text-xs text-ink-500">{body}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-4">
+        <StatCard label="Delivery reached" value={reached} />
+        <StatCard label="POD upload" value={uploaded} tone="blue" />
+        <StatCard label="POD review" value={review} tone="green" />
+        <StatCard label="Completed" value={completed} tone="green" />
+      </div>
+      <div className="flex gap-2">
+        <Input placeholder="Search shipment, vehicle or driver..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value) }} />
+        <Select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value) }} className="w-48">
+          <option value="">All deliveries</option>
+          <option value="PENDING">Pending</option>
+          <option value="UPLOADED">Uploaded</option>
+          <option value="VERIFIED">Verified</option>
+          <option value="REJECTED">Rejected</option>
+        </Select>
+      </div>
       <Card>
-        <CardHeader title="POD records" action={<Input placeholder="Search..." value={search} onChange={(e) => { setPage(1); setSearch(e.target.value) }} className="w-48" />} />
         <CardBody className="p-0">
-          {isLoading ? <TableSkeleton /> : rows.length === 0 ? (
-            <EmptyState title="No POD records" description="Capture a delivery proof when trips complete." />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-ink-100 bg-ink-50/80 text-xs uppercase tracking-wide text-ink-500">
-                  <tr>
-                    <th className="px-5 py-3 font-medium">Trip</th>
-                    <th className="px-5 py-3 font-medium">Received by</th>
-                    <th className="px-5 py-3 font-medium">When</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
+          {isLoading ? <TableSkeleton /> : rows.length === 0 ? <EmptyState title="No POD records" /> : (
+            <table className="min-w-full text-sm">
+              <thead className="bg-ink-50 text-xs uppercase text-ink-500">
+                <tr>
+                  <th className="px-4 py-3 text-left">Shipment</th>
+                  <th className="px-4 py-3 text-left">Route</th>
+                  <th className="px-4 py-3 text-left">Vehicle / Driver</th>
+                  <th className="px-4 py-3 text-left">Expected</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">POD</th>
+                  <th className="px-4 py-3">Next action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((pod) => (
+                  <tr key={pod._id} className="border-t border-ink-50">
+                    <td className="px-4 py-3 font-medium text-blue-700">{pod.booking?.bookingNumber || pod.booking?.shipmentNumber || '—'}</td>
+                    <td className="px-4 py-3">{pod.trip?.tripNumber || '—'}</td>
+                    <td className="px-4 py-3">{pod.receiverName}</td>
+                    <td className="px-4 py-3">{pod.receivedAt ? new Date(pod.receivedAt).toLocaleDateString() : '—'}</td>
+                    <td className="px-4 py-3"><StatusBadge status={pod.status} /></td>
+                    <td className="px-4 py-3">{pod.photoUrls?.[0] ? <a className="text-blue-700" href={pod.photoUrls[0]} target="_blank" rel="noreferrer">View POD</a> : '—'}</td>
+                    <td className="px-4 py-3">
+                      {pod.status === 'UPLOADED' && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="success" onClick={() => act(pod._id, 'VERIFIED')}>Approve</Button>
+                          <Button size="sm" variant="danger" onClick={() => act(pod._id, 'REJECTED', 'Rejected by admin')}>Reject</Button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className={isFetching ? 'opacity-60' : ''}>
-                  {rows.map((r) => (
-                    <tr key={r._id} className="border-b border-ink-50">
-                      <td className="px-5 py-3 font-medium">{r.trip?.tripNumber || r.tripId || '—'}</td>
-                      <td className="px-5 py-3">{r.receivedBy}</td>
-                      <td className="px-5 py-3">{r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '—'}</td>
-                      <td className="px-5 py-3"><StatusBadge status={r.status || 'COMPLETED'} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
           <Pagination meta={data?.meta} onPageChange={setPage} />
         </CardBody>

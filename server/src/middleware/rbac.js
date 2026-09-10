@@ -6,7 +6,7 @@ export function requirePermission(...required) {
       return next(new ApiError(401, 'Authentication required', null, 'UNAUTHORIZED'));
     }
 
-    if (req.user.role?.slug === 'super-admin') {
+    if (req.user.role?.slug === 'super-admin' || req.user.role?.slug === 'admin') {
       return next();
     }
 
@@ -29,7 +29,7 @@ export function requireAnyPermission(...required) {
       return next(new ApiError(401, 'Authentication required', null, 'UNAUTHORIZED'));
     }
 
-    if (req.user.role?.slug === 'super-admin') {
+    if (req.user.role?.slug === 'super-admin' || req.user.role?.slug === 'admin') {
       return next();
     }
 

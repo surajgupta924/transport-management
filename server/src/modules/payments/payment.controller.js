@@ -16,3 +16,8 @@ export const createPayment = asyncHandler(async (req, res) => {
   const payment = await paymentService.createPayment(req.body, req.user, req);
   return sendSuccess(res, { status: 201, message: 'Payment recorded', data: payment });
 });
+
+export const paymentSummary = asyncHandler(async (_req, res) => {
+  const data = await paymentService.getPaymentSummary();
+  return sendSuccess(res, { message: 'Payment summary', data });
+});

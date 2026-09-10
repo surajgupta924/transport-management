@@ -47,3 +47,16 @@ export async function nextTripNumber() {
 export async function nextInvoiceNumber() {
   return nextSequence('INV');
 }
+
+export async function nextShipmentNumber() {
+  const n = await nextSequence('SHP', { pad: 4, yearly: false });
+  return `SHP-${Date.now()}-${n.split('-').pop()}`;
+}
+
+export async function nextLrNumber() {
+  return nextSequence('LR');
+}
+
+export async function nextEmployeeCode() {
+  return nextSequence('EMP', { pad: 5, yearly: false });
+}

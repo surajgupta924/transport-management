@@ -52,7 +52,7 @@ export async function listInvoices(query, actor) {
   const [items, total] = await Promise.all([
     Invoice.find(filter)
       .populate('customer', 'name company email mobile')
-      .populate('booking', 'bookingNumber')
+      .populate('booking', 'bookingNumber shipmentNumber')
       .populate('trip', 'tripNumber')
       .sort(sort)
       .skip(skip)
@@ -291,4 +291,80 @@ export async function applyPaymentToInvoice(invoice, amount) {
   }
   await invoice.save();
   return invoice;
+}
+
+const DESIGNER_KEYS = {
+  templateName: 'invoice.templateName',
+  style: 'invoice.style',
+  primaryColor: 'invoice.primaryColor',
+  headerColor: 'invoice.headerColor',
+  font: 'invoice.font',
+  headerAlign: 'invoice.headerAlign',
+  logoSize: 'invoice.logoSize',
+  showLogo: 'invoice.showLogo',
+  showAddress: 'invoice.showAddress',
+  showContact: 'invoice.showContact',
+  showGst: 'invoice.showGst',
+  showCustomerId: 'invoice.showCustomerId',
+  showTracking: 'invoice.showTracking',
+  showBookingDate: 'invoice.showBookingDate',
+  showDueDate: 'invoice.showDueDate',
+  published: 'invoice.published',
+};
+
+export async function getInvoiceSummary() {
+  const [total, issued, paid, amount] = await Promise.all([
+    Invoice.countDocuments(),
+    Invoice.countDocuments({ status: 'ISSUED' }),
+    Invoice.countDocuments({ status: 'PAID' }),
+    Invoice.aggregate([
+      { $match: { status: { $ne: 'CANCELLED' } } },
+      { $group: { _id: null, total: { $sum: '$total' }, collected: { $sum: '$amountPaid' } } },
+    ]),
+  ]);
+  return {
+    totalInvoices: total,
+    issued,
+    paid,
+    totalAmount: amount[0]?.total || 0,
+    collected: amount[0]?.collected || 0,
+  };
+}
+
+export async function getDesigner() {
+  const { Setting } = await import('../settings/setting.model.js');
+  const items = await Setting.find({ key: { $in: Object.values(DESIGNER_KEYS) } });
+  const map = Object.fromEntries(items.map((s) => [s.key, s.value]));
+  return {
+    templateName: map[DESIGNER_KEYS.templateName] || 'Default Invoice',
+    style: map[DESIGNER_KEYS.style] || 'modern',
+    primaryColor: map[DESIGNER_KEYS.primaryColor] || '#2563eb',
+    headerColor: map[DESIGNER_KEYS.headerColor] || '#0f172a',
+    font: map[DESIGNER_KEYS.font] || 'Inter',
+    headerAlign: map[DESIGNER_KEYS.headerAlign] || 'left',
+    logoSize: map[DESIGNER_KEYS.logoSize] || 'medium',
+    showLogo: map[DESIGNER_KEYS.showLogo] !== false,
+    showAddress: map[DESIGNER_KEYS.showAddress] !== false,
+    showContact: map[DESIGNER_KEYS.showContact] !== false,
+    showGst: map[DESIGNER_KEYS.showGst] !== false,
+    showCustomerId: map[DESIGNER_KEYS.showCustomerId] !== false,
+    showTracking: map[DESIGNER_KEYS.showTracking] !== false,
+    showBookingDate: map[DESIGNER_KEYS.showBookingDate] !== false,
+    showDueDate: map[DESIGNER_KEYS.showDueDate] !== false,
+    published: map[DESIGNER_KEYS.published] === true,
+  };
+}
+
+export async function saveDesigner(payload, actor, req) {
+  const { upsertSetting } = await import('../settings/setting.service.js');
+  const current = await getDesigner();
+  const next = { ...current, ...payload };
+  for (const [field, key] of Object.entries(DESIGNER_KEYS)) {
+    await upsertSetting(
+      { key, value: next[field], group: 'invoice', description: `Invoice designer ${field}` },
+      actor,
+      req
+    );
+  }
+  return getDesigner();
 }

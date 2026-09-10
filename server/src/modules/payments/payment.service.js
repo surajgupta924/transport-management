@@ -93,3 +93,21 @@ export async function createPayment(payload, actor, req) {
   });
   return getPaymentById(payment._id);
 }
+
+export async function getPaymentSummary() {
+  const [count, collected, outstandingInvoices, outstanding] = await Promise.all([
+    Payment.countDocuments(),
+    Payment.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Invoice.countDocuments({ status: { $in: ['ISSUED', 'PARTIAL', 'OVERDUE'] } }),
+    Invoice.aggregate([
+      { $match: { status: { $in: ['ISSUED', 'PARTIAL', 'OVERDUE'] } } },
+      { $group: { _id: null, total: { $sum: '$amountDue' } } },
+    ]),
+  ]);
+  return {
+    totalPayments: count,
+    collected: collected[0]?.total || 0,
+    outstandingInvoices,
+    outstanding: outstanding[0]?.total || 0,
+  };
+}

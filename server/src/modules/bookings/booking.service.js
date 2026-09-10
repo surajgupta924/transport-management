@@ -3,9 +3,11 @@ import { Customer } from '../customers/customer.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { parsePagination, buildMeta } from '../../utils/pagination.js';
 import { writeAuditLog } from '../audit/audit.service.js';
-import { nextBookingNumber } from '../../utils/sequence.js';
+import { nextBookingNumber, nextShipmentNumber, nextLrNumber } from '../../utils/sequence.js';
 import { assertOtpToken } from '../auth/otp.service.js';
 import { enqueueEmail } from '../../jobs/index.js';
+import { applyLoadingIncentives } from '../loadingStaff/loadingStaff.service.js';
+import { emitNotification } from '../notifications/notification.service.js';
 
 function linkedId(value) {
   if (!value) return undefined;
@@ -68,6 +70,9 @@ export function presentBooking(booking) {
   obj.pickupAddress = obj.pickup?.address;
   obj.deliveryAddress = obj.delivery?.address;
   obj.remarks = obj.notes;
+  obj.shipmentNumber = obj.shipmentNumber || obj.bookingNumber;
+  obj.origin = obj.pickup?.city;
+  obj.destination = obj.delivery?.city;
   return obj;
 }
 
@@ -90,10 +95,33 @@ function mapPayload(payload) {
   if (payload.remarks && !payload.notes) data.notes = payload.remarks;
   delete data.remarks;
   if (payload.charges) data.charges = computeCharges(payload.charges);
+  if (payload.loadingStaff) {
+    data.loadingStaff = payload.loadingStaff
+      .map((row) => ({
+        staff: row.staff || row.staffId,
+        rate: row.rate || 0,
+        incentive: row.incentive || 0,
+      }))
+      .filter((row) => row.staff);
+  }
+  if (payload.fromCity || payload.origin) {
+    data.pickup = data.pickup || {};
+    data.pickup.address = { ...(data.pickup.address || {}), city: payload.fromCity || payload.origin, line1: payload.fromAddress || data.pickup.address?.line1 };
+  }
+  if (payload.toCity || payload.destination) {
+    data.delivery = data.delivery || {};
+    data.delivery.address = { ...(data.delivery.address || {}), city: payload.toCity || payload.destination, line1: payload.toAddress || data.delivery.address?.line1 };
+  }
   delete data.otpToken;
   delete data.clientName;
   delete data.clientEmail;
   delete data.clientPhone;
+  delete data.fromCity;
+  delete data.toCity;
+  delete data.origin;
+  delete data.destination;
+  delete data.fromAddress;
+  delete data.toAddress;
   return data;
 }
 
@@ -104,9 +132,14 @@ export async function listBookings(query, actor) {
   if (search) {
     filter.$or = [
       { bookingNumber: new RegExp(search, 'i') },
+      { shipmentNumber: new RegExp(search, 'i') },
+      { lrNumber: new RegExp(search, 'i') },
+      { containerNumber: new RegExp(search, 'i') },
       { notes: new RegExp(search, 'i') },
       { 'pickup.address.city': new RegExp(search, 'i') },
       { 'delivery.address.city': new RegExp(search, 'i') },
+      { 'consignor.name': new RegExp(search, 'i') },
+      { 'consignee.name': new RegExp(search, 'i') },
     ];
   }
   if (query.status) filter.status = query.status;
@@ -130,6 +163,7 @@ export async function listBookings(query, actor) {
       .populate('route', 'name origin destination')
       .populate('branch', 'name code')
       .populate('trip', 'tripNumber status')
+      .populate('loadingStaff.staff', 'name employeeCode designation incentiveRate')
       .sort(sort)
       .skip(skip)
       .limit(limit),
@@ -145,6 +179,7 @@ export async function getBookingById(id) {
     .populate('route', 'name origin destination stops distanceKm')
     .populate('branch', 'name code')
     .populate('trip')
+    .populate('loadingStaff.staff', 'name employeeCode designation incentiveRate')
     .populate('createdBy', 'name email');
   if (!booking) throw new ApiError(404, 'Booking not found');
   return presentBooking(booking);
@@ -182,10 +217,16 @@ export async function createBooking(payload, actor, req) {
 
   const data = mapPayload(payload);
   data.bookingNumber = await nextBookingNumber();
+  data.shipmentNumber = payload.shipmentNumber || (await nextShipmentNumber());
+  data.lrNumber = payload.lrNumber || (await nextLrNumber());
   data.createdBy = actor._id;
-
-  // Online and offline share the same workflow
+  data.bookingDate = data.bookingDate || new Date();
   if (!data.source) data.source = 'ADMIN';
+  if (!data.status) data.status = 'PENDING';
+
+  if (data.loadingStaff?.length) {
+    data.loadingStaff = await applyLoadingIncentives(data.loadingStaff, data.cargo?.weightKg || 0);
+  }
 
   const booking = await Booking.create(data);
   await writeAuditLog({
@@ -194,10 +235,17 @@ export async function createBooking(payload, actor, req) {
     entity: 'Booking',
     entityId: booking._id,
     action: 'CREATE',
-    description: `${actor.email} created booking ${booking.bookingNumber}`,
+    description: `${actor.email} created shipment ${booking.shipmentNumber || booking.bookingNumber}`,
     newValue: { status: booking.status, source: booking.source },
     req,
   });
+
+  emitNotification(actor._id, {
+    title: `New shipment: ${booking.shipmentNumber || booking.bookingNumber}`,
+    body: `${customer.name} is waiting for approval.`,
+    type: 'INFO',
+    link: '/app/shipments?status=PENDING',
+  }).catch(() => {});
 
   if (customer.email) {
     enqueueEmail('booking-confirmation', {
@@ -283,4 +331,29 @@ export async function deleteBooking(id, actor, req) {
     req,
   });
   return { deleted: true };
+}
+
+export async function getBookingStats(actor) {
+  const base = {};
+  if (actor?.portalType === 'CUSTOMER') {
+    const customerId = linkedId(actor?.linkedCustomer);
+    if (customerId) base.customer = customerId;
+    else base._id = { $exists: false };
+  }
+  const rows = await Booking.aggregate([{ $match: base }, { $group: { _id: '$status', count: { $sum: 1 } } }]);
+  const byStatus = Object.fromEntries(rows.map((r) => [r._id, r.count]));
+  const total = rows.reduce((sum, r) => sum + r.count, 0);
+  return {
+    total,
+    pending: byStatus.PENDING || 0,
+    unassigned: (byStatus.UNASSIGNED || 0) + (byStatus.CONFIRMED || 0),
+    assigned: byStatus.ASSIGNED || 0,
+    inTransit: byStatus.IN_TRANSIT || 0,
+    outForDelivery: byStatus.OUT_FOR_DELIVERY || 0,
+    delivered: byStatus.DELIVERED || 0,
+    completed: byStatus.COMPLETED || 0,
+    podUploaded: byStatus.POD_UPLOADED || 0,
+    cancelled: byStatus.CANCELLED || 0,
+    byStatus,
+  };
 }

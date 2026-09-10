@@ -26,6 +26,8 @@ export const createVehicleSchema = z.object({
   currentKm: z.coerce.number().min(0).optional().default(0),
   status: z.enum(['AVAILABLE', 'ON_TRIP', 'MAINTENANCE', 'INACTIVE', 'SOLD']).optional().default('AVAILABLE'),
   branchId: objectId.optional().or(z.literal('')),
+  gpsDeviceId: z.string().optional(),
+  ownership: z.enum(['OWNED', 'HIRED']).optional(),
   notes: z.string().optional(),
   nextServiceKm: z.number().optional(),
   nextServiceDate: z.coerce.date().optional(),

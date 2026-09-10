@@ -72,6 +72,14 @@ export async function createPod(payload, actor, req) {
     uploadedBy: actor._id,
   });
 
+  if (pod.status === 'UPLOADED') {
+    const booking = await Booking.findById(pod.booking);
+    if (booking && !['COMPLETED', 'CANCELLED'].includes(booking.status)) {
+      booking.status = 'POD_UPLOADED';
+      await booking.save();
+    }
+  }
+
   await writeAuditLog({
     actor,
     module: 'pod',
@@ -125,9 +133,17 @@ export async function verifyPod(id, { status, reason }, actor, req) {
 
   if (status === 'VERIFIED') {
     const booking = await Booking.findById(pod.booking);
-    if (booking && booking.status === 'DELIVERED') {
+    if (booking && ['DELIVERED', 'POD_UPLOADED', 'OUT_FOR_DELIVERY'].includes(booking.status)) {
       booking.status = 'COMPLETED';
       await booking.save();
+    }
+    const trip = await Trip.findById(pod.trip);
+    if (trip && !['COMPLETED', 'CANCELLED'].includes(trip.status)) {
+      trip.status = 'COMPLETED';
+      trip.assignmentStatus = 'RELEASED';
+      trip.releasedAt = new Date();
+      trip.locationSharing = false;
+      await trip.save();
     }
   }
 

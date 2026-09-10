@@ -31,14 +31,17 @@ export async function listNotifications(userId, query) {
   const { page, limit, skip, sort } = parsePagination(query);
   const filter = { user: userId };
   if (query.unread === 'true') filter.readAt = null;
+  if (query.type && query.type !== 'ALL') filter.type = query.type;
 
-  const [items, total, unreadCount] = await Promise.all([
+  const [items, total, unreadCount, warningCount, successCount] = await Promise.all([
     Notification.find(filter).sort(sort).skip(skip).limit(limit),
     Notification.countDocuments(filter),
     Notification.countDocuments({ user: userId, readAt: null }),
+    Notification.countDocuments({ user: userId, type: 'WARNING' }),
+    Notification.countDocuments({ user: userId, type: 'SUCCESS' }),
   ]);
 
-  return { items, meta: { ...buildMeta({ page, limit, total }), unreadCount } };
+  return { items, meta: { ...buildMeta({ page, limit, total }), unreadCount, warningCount, successCount } };
 }
 
 export async function markRead(userId, id) {

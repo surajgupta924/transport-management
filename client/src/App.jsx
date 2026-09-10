@@ -29,6 +29,9 @@ import './features/vendors/vendorsApi'
 import './features/audit/auditApi'
 import './features/settlements/settlementsApi'
 import './features/uploads/uploadsApi'
+import './features/loading-staff/loadingStaffApi'
+import './features/hired-vehicles/hiredVehiclesApi'
+import './features/gps/gpsApi'
 
 export default function App() {
   return (

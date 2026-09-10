@@ -78,6 +78,14 @@ export const PERMISSION_DEFINITIONS = [
   { module: 'vendors', action: 'view', description: 'View vendors' },
   { module: 'vendors', action: 'create', description: 'Create vendors' },
   { module: 'vendors', action: 'edit', description: 'Edit vendors' },
+  { module: 'loadingStaff', action: 'view', description: 'View loading staff' },
+  { module: 'loadingStaff', action: 'create', description: 'Create loading staff' },
+  { module: 'loadingStaff', action: 'edit', description: 'Edit loading staff' },
+  { module: 'hiredVehicles', action: 'view', description: 'View hired vehicles' },
+  { module: 'hiredVehicles', action: 'create', description: 'Create hired vehicles' },
+  { module: 'hiredVehicles', action: 'edit', description: 'Edit hired vehicles' },
+  { module: 'gps', action: 'view', description: 'View GPS integration' },
+  { module: 'gps', action: 'manage', description: 'Manage GPS integration' },
 ];
 
 const all = (modulesActions) => modulesActions;
@@ -118,6 +126,9 @@ export const ROLE_DEFINITIONS = [
       'reports:view', 'reports:export',
       'notifications:view', 'support:view', 'support:manage',
       'branches:view', 'vendors:view', 'vendors:create', 'vendors:edit',
+      'loadingStaff:view', 'loadingStaff:create', 'loadingStaff:edit',
+      'hiredVehicles:view', 'hiredVehicles:create', 'hiredVehicles:edit',
+      'gps:view', 'gps:manage',
     ],
   },
   {
@@ -134,6 +145,7 @@ export const ROLE_DEFINITIONS = [
       'fuel:view', 'fuel:create',
       'expenses:view', 'expenses:create',
       'pod:view',
+      'loadingStaff:view', 'hiredVehicles:view', 'gps:view',
       'reports:view',
       'notifications:view', 'support:view', 'support:create',
     ],

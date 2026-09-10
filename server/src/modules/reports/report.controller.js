@@ -32,3 +32,8 @@ export const exportOperations = asyncHandler(async (req, res) => {
   const csv = await reportService.exportOperationsCsv(req.query);
   return sendCsv(res, 'operations-report.csv', csv);
 });
+
+export const business = asyncHandler(async (req, res) => {
+  const data = await reportService.businessReport(req.query);
+  return sendSuccess(res, { message: 'Business report', data });
+});

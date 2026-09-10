@@ -6,6 +6,10 @@ export const paymentsApi = apiSlice.injectEndpoints({
       query: (params) => ({ url: '/payments', params }),
       providesTags: ['Payments'],
     }),
+    getPaymentSummary: builder.query({
+      query: () => '/payments/summary',
+      providesTags: ['Payments'],
+    }),
     createPayment: builder.mutation({
       query: (body) => ({ url: '/payments', method: 'POST', body }),
       invalidatesTags: ['Payments', 'Invoices', 'Ledger', 'Dashboard'],
@@ -13,4 +17,4 @@ export const paymentsApi = apiSlice.injectEndpoints({
   }),
 })
 
-export const { useGetPaymentsQuery, useCreatePaymentMutation } = paymentsApi
+export const { useGetPaymentsQuery, useGetPaymentSummaryQuery, useCreatePaymentMutation } = paymentsApi

@@ -34,6 +34,9 @@ import auditRoutes from './modules/audit/audit.routes.js';
 import reportRoutes from './modules/reports/report.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import uploadRoutes from './modules/uploads/upload.routes.js';
+import loadingStaffRoutes from './modules/loadingStaff/loadingStaff.routes.js';
+import hiredVehicleRoutes from './modules/hiredVehicles/hiredVehicle.routes.js';
+import gpsRoutes from './modules/gps/gps.routes.js';
 
 export function createApp() {
   const app = express();
@@ -96,6 +99,9 @@ export function createApp() {
   app.use('/api/v1/reports', reportRoutes);
   app.use('/api/v1/dashboard', dashboardRoutes);
   app.use('/api/v1/uploads', uploadRoutes);
+  app.use('/api/v1/loading-staff', loadingStaffRoutes);
+  app.use('/api/v1/hired-vehicles', hiredVehicleRoutes);
+  app.use('/api/v1/gps', gpsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -2,11 +2,12 @@ import { cn } from '../../lib/utils'
 
 const variants = {
   primary:
-    'bg-brand-500 text-white hover:bg-brand-600 shadow-sm disabled:bg-brand-300',
+    'bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:bg-blue-300',
   secondary:
     'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 disabled:opacity-60',
   ghost: 'bg-transparent text-ink-700 hover:bg-ink-100 disabled:opacity-50',
   danger: 'bg-danger-500 text-white hover:bg-red-700 disabled:opacity-60',
+  success: 'bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60',
 }
 
 const sizes = {

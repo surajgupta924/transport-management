@@ -6,6 +6,26 @@ export const tripsApi = apiSlice.injectEndpoints({
       query: (params) => ({ url: '/trips', params }),
       providesTags: ['Trips'],
     }),
+    getAssignmentBoard: builder.query({
+      query: () => '/trips/board',
+      providesTags: ['Trips', 'Bookings', 'Vehicles', 'Drivers'],
+    }),
+    assignShipment: builder.mutation({
+      query: (body) => ({ url: '/trips/assign-shipment', method: 'POST', body }),
+      invalidatesTags: ['Trips', 'Bookings', 'Vehicles', 'Drivers', 'Dashboard'],
+    }),
+    acceptAssignment: builder.mutation({
+      query: (id) => ({ url: `/trips/${id}/accept`, method: 'POST' }),
+      invalidatesTags: ['Trips', 'Bookings'],
+    }),
+    rejectAssignment: builder.mutation({
+      query: ({ id, reason }) => ({ url: `/trips/${id}/reject`, method: 'POST', body: { reason } }),
+      invalidatesTags: ['Trips', 'Bookings', 'Vehicles', 'Drivers'],
+    }),
+    releaseAssignment: builder.mutation({
+      query: (id) => ({ url: `/trips/${id}/release`, method: 'POST' }),
+      invalidatesTags: ['Trips', 'Bookings', 'Vehicles', 'Drivers'],
+    }),
     getTrip: builder.query({
       query: (id) => `/trips/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Trips', id }],
@@ -42,6 +62,11 @@ export const tripsApi = apiSlice.injectEndpoints({
 
 export const {
   useGetTripsQuery,
+  useGetAssignmentBoardQuery,
+  useAssignShipmentMutation,
+  useAcceptAssignmentMutation,
+  useRejectAssignmentMutation,
+  useReleaseAssignmentMutation,
   useGetTripQuery,
   useCreateTripMutation,
   useAssignTripMutation,

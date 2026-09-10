@@ -116,6 +116,9 @@ async function seedSettings() {
     { key: 'booking.prefix', value: 'BK', group: 'bookings', description: 'Booking number prefix' },
     { key: 'trip.prefix', value: 'TR', group: 'trips', description: 'Trip number prefix' },
     { key: 'invoice.prefix', value: 'INV', group: 'invoices', description: 'Invoice number prefix' },
+    { key: 'gps.provider', value: 'GENERIC', group: 'gps', description: 'GPS provider name' },
+    { key: 'gps.mobileFallbackDelay', value: 90, group: 'gps', description: 'Mobile GPS fallback delay (seconds)' },
+    { key: 'gps.truckGpsEnabled', value: false, group: 'gps', description: 'Enable truck GPS integration' },
   ];
 
   for (const item of defaults) {

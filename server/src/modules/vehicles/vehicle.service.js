@@ -10,6 +10,7 @@ function mapPayload(payload) {
     delete data.branchId;
   }
   if (data.registrationNumber) data.registrationNumber = data.registrationNumber.toUpperCase().trim();
+  if (data.gpsDeviceId) data.gpsDeviceId = data.gpsDeviceId.toUpperCase().trim();
   return data;
 }
 

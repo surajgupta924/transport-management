@@ -4,7 +4,7 @@ import { selectPermissions, selectCurrentUser } from '../features/auth/authSlice
 export function usePermission() {
   const permissions = useSelector(selectPermissions)
   const user = useSelector(selectCurrentUser)
-  const isSuperAdmin = user?.role?.slug === 'super-admin'
+  const isSuperAdmin = user?.role?.slug === 'super-admin' || user?.role?.slug === 'admin'
 
   const can = (...codes) => {
     if (isSuperAdmin) return true

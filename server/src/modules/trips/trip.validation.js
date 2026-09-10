@@ -62,3 +62,21 @@ export const tripLocationSchema = z.object({
 export const tripSharingSchema = z.object({
   sharing: z.coerce.boolean(),
 });
+
+export const assignShipmentSchema = z.object({
+  bookingId: objectId,
+  vehicleId: objectId,
+  driverId: objectId,
+  helper: z
+    .object({
+      name: z.string().optional(),
+      mobile: z.string().optional(),
+    })
+    .optional(),
+  startKm: z.number().min(0).optional(),
+  notes: z.string().optional(),
+});
+
+export const rejectAssignmentSchema = z.object({
+  reason: z.string().optional(),
+});

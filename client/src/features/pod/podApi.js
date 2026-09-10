@@ -18,7 +18,11 @@ export const podApi = apiSlice.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/pod/${id}`, method: 'PATCH', body }),
       invalidatesTags: ['POD'],
     }),
+    verifyPod: builder.mutation({
+      query: ({ id, status, reason }) => ({ url: `/pod/${id}/verify`, method: 'POST', body: { status, reason } }),
+      invalidatesTags: ['POD', 'Bookings', 'Trips'],
+    }),
   }),
 })
 
-export const { useGetPodsQuery, useGetPodQuery, useCreatePodMutation, useUpdatePodMutation } = podApi
+export const { useGetPodsQuery, useGetPodQuery, useCreatePodMutation, useUpdatePodMutation, useVerifyPodMutation } = podApi
