@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const expenseSettlementSchema = new mongoose.Schema(
   {
     driver: { type: mongoose.Schema.Types.ObjectId, ref: 'Driver', required: true, index: true },
+    trip: { type: mongoose.Schema.Types.ObjectId, ref: 'Trip', index: true },
     periodFrom: Date,
     periodTo: Date,
     expenses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Expense' }],

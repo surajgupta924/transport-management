@@ -19,7 +19,7 @@ export function PaymentsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ invoiceId: '', amount: 0, method: 'UPI', reference: '', paidAt: '' })
+  const [form, setForm] = useState({ invoiceId: '', amount: 0, method: 'Bank Transfer', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' })
   const { data, isLoading } = useGetPaymentsQuery({ page, limit: 10 })
   const { data: summaryData } = useGetPaymentSummaryQuery()
   const { data: invoicesData } = useGetInvoicesQuery({ limit: 100 })
@@ -85,25 +85,28 @@ export function PaymentsPage() {
           <Pagination meta={data?.meta} onPageChange={setPage} />
         </CardBody>
       </Card>
-      <Modal open={open} title="Record Payment" onClose={() => setOpen(false)}>
+      <Modal open={open} title="Record Payment" description="Save the amount received against the invoice and the transaction details." onClose={() => setOpen(false)}>
         <div className="grid gap-3">
-          <Select label="Outstanding invoice" value={form.invoiceId} onChange={(e) => {
+          <Select label="Invoice" required value={form.invoiceId} onChange={(e) => {
             const inv = invoices.find((i) => i._id === e.target.value)
             setForm((s) => ({ ...s, invoiceId: e.target.value, amount: inv?.amountDue || inv?.total || 0 }))
           }}>
-            <option value="">Select invoice</option>
+            <option value="">Select outstanding invoice</option>
             {invoices.map((inv) => <option key={inv._id} value={inv._id}>{inv.invoiceNumber} · due {formatMoney(inv.amountDue)}</option>)}
           </Select>
-          <Input label="Amount" type="number" value={form.amount} onChange={(e) => setForm((s) => ({ ...s, amount: e.target.value }))} />
-          <Select label="Method" value={form.method} onChange={(e) => setForm((s) => ({ ...s, method: e.target.value }))}>
-            {['UPI', 'CASH', 'NEFT', 'CHEQUE', 'CARD'].map((m) => <option key={m}>{m}</option>)}
-          </Select>
-          <Input label="Reference" value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} />
-          <Input label="Payment date" type="date" value={form.paidAt} onChange={(e) => setForm((s) => ({ ...s, paidAt: e.target.value }))} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input label="Payment amount" type="number" required value={form.amount} onChange={(e) => setForm((s) => ({ ...s, amount: e.target.value }))} />
+            <Input label="Payment date" type="date" required value={form.paidAt} onChange={(e) => setForm((s) => ({ ...s, paidAt: e.target.value }))} />
+            <Select label="Payment method" required value={form.method} onChange={(e) => setForm((s) => ({ ...s, method: e.target.value }))}>
+              {['Bank Transfer', 'UPI', 'Cash', 'Cheque', 'Online'].map((m) => <option key={m}>{m}</option>)}
+            </Select>
+            <Input label="Transaction / cheque reference" value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} />
+          </div>
+          <Input label="Payment notes" value={form.notes} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} />
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button loading={creating} onClick={save}>Save</Button>
+          <Button loading={creating} onClick={save}>Save Payment</Button>
         </div>
       </Modal>
     </div>

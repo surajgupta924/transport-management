@@ -52,7 +52,15 @@ export async function listExpenses(query, actor) {
     Expense.find(filter)
       .populate('vehicle', 'registrationNumber')
       .populate('driver', 'name mobile')
-      .populate('trip', 'tripNumber')
+      .populate({
+        path: 'trip',
+        select: 'tripNumber status assignmentStatus driver vehicle booking',
+        populate: [
+          { path: 'booking', select: 'shipmentNumber bookingNumber lrNumber pickup delivery' },
+          { path: 'driver', select: 'name mobile' },
+          { path: 'vehicle', select: 'registrationNumber' },
+        ],
+      })
       .populate('branch', 'name code')
       .populate('vendor', 'name')
       .populate('createdBy', 'name email')
@@ -69,7 +77,15 @@ export async function getExpenseById(id) {
   const expense = await Expense.findById(id)
     .populate('vehicle', 'registrationNumber')
     .populate('driver', 'name mobile')
-    .populate('trip', 'tripNumber')
+    .populate({
+      path: 'trip',
+      select: 'tripNumber status assignmentStatus driver vehicle booking',
+      populate: [
+        { path: 'booking', select: 'shipmentNumber bookingNumber lrNumber pickup delivery' },
+        { path: 'driver', select: 'name mobile' },
+        { path: 'vehicle', select: 'registrationNumber' },
+      ],
+    })
     .populate('branch', 'name code')
     .populate('vendor', 'name')
     .populate('createdBy', 'name email')

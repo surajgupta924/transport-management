@@ -12,7 +12,7 @@ export function Topbar({ onMenuClick }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [logoutApi] = useLogoutMutation()
-  const { data } = useGetNotificationsQuery({ page: 1, limit: 1, unread: 'true' })
+  const { data } = useGetNotificationsQuery({ page: 1, limit: 1, unread: 'true' }, { pollingInterval: 15000 })
   const unread = data?.meta?.unreadCount || 0
 
   const handleLogout = async () => {

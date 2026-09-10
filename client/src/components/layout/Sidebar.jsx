@@ -69,7 +69,7 @@ const groups = [
     key: 'trips',
     label: 'Trip Management',
     icon: MapPinned,
-    items: [{ to: '/app/trips', label: 'All Trips', permission: 'trips:view' }],
+    items: [{ to: '/app/trips', label: 'All Trips', permission: 'trips:view' }, { to: '/app/trip-expenses', label: 'Trip Expenses', permission: 'expenses:view' }, { to: '/app/trip-settlement', label: 'Trip Settlement', permission: 'expenses:view' }],
   },
   {
     key: 'pod',

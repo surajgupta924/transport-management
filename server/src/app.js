@@ -43,9 +43,25 @@ export function createApp() {
 
   app.set('trust proxy', 1);
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  const allowedOrigins = String(env.clientUrl || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
   app.use(
     cors({
-      origin: env.clientUrl,
+      origin(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (
+          allowedOrigins.includes('*') ||
+          allowedOrigins.includes(origin) ||
+          /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin) ||
+          /^http:\/\/localhost(:\d+)?$/i.test(origin)
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       credentials: true,
     })
   );

@@ -1,14 +1,13 @@
 import { Server } from 'socket.io';
 import { verifyAccessToken } from '../utils/tokens.js';
 import { User } from '../modules/users/user.model.js';
-import { env } from '../config/env.js';
 import * as trackingService from '../modules/tracking/tracking.service.js';
 import { setNotificationIo } from '../modules/notifications/notification.service.js';
 
 export function initSockets(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: env.clientUrl,
+      origin: true,
       credentials: true,
     },
   });

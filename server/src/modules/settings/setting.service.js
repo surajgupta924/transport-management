@@ -10,8 +10,17 @@ export const PUBLIC_SETTING_KEYS = [
   'company.supportEmail',
   'company.supportPhone',
   'company.gstin',
+  'company.pan',
   'company.currency',
   'company.timezone',
+  'company.address',
+  'company.city',
+  'company.state',
+  'company.pincode',
+  'company.bankName',
+  'company.bankAccount',
+  'company.ifsc',
+  'company.paymentTerms',
 ];
 
 export async function listPublicSettings() {
@@ -25,8 +34,17 @@ export async function listPublicSettings() {
     supportEmail: map['company.supportEmail'] || '',
     supportPhone: map['company.supportPhone'] || '',
     gstin: map['company.gstin'] || '',
+    pan: map['company.pan'] || '',
     currency: map['company.currency'] || 'INR',
     timezone: map['company.timezone'] || 'Asia/Kolkata',
+    address: map['company.address'] || '',
+    city: map['company.city'] || '',
+    state: map['company.state'] || '',
+    pincode: map['company.pincode'] || '',
+    bankName: map['company.bankName'] || '',
+    bankAccount: map['company.bankAccount'] || '',
+    ifsc: map['company.ifsc'] || '',
+    paymentTerms: map['company.paymentTerms'] || 'Due on Receipt',
   };
 }
 

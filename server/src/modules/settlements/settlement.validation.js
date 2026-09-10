@@ -16,3 +16,13 @@ export const updateSettlementSchema = createSettlementSchema.partial();
 export const settleSchema = z.object({
   status: z.enum(['SETTLED', 'CANCELLED']).default('SETTLED'),
 });
+
+export const recordAdvanceSchema = z
+  .object({
+    tripId: objectId.optional(),
+    driverId: objectId.optional(),
+    amount: z.coerce.number().positive(),
+    date: z.coerce.date().optional(),
+    notes: z.string().optional(),
+  })
+  .refine((data) => data.tripId || data.driverId, { message: 'Trip or driver is required' });

@@ -9,6 +9,8 @@ export const createPaymentSchema = z.preprocess((val) => {
     Cash: 'Cash',
     BANK: 'Bank',
     Bank: 'Bank',
+    'Bank Transfer': 'Bank',
+    BANK_TRANSFER: 'Bank',
     NEFT: 'Bank',
     UPI: 'UPI',
     CHEQUE: 'Cheque',

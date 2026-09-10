@@ -21,6 +21,7 @@ export async function listLoadingStaff(query) {
       { name: new RegExp(search, 'i') },
       { employeeCode: new RegExp(search, 'i') },
       { mobile: new RegExp(search, 'i') },
+      { branchName: new RegExp(search, 'i') },
     ];
   }
   if (query.status) filter.status = query.status;

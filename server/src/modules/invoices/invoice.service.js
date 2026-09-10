@@ -309,8 +309,44 @@ const DESIGNER_KEYS = {
   showTracking: 'invoice.showTracking',
   showBookingDate: 'invoice.showBookingDate',
   showDueDate: 'invoice.showDueDate',
+  showPaymentStatus: 'invoice.showPaymentStatus',
+  showBankDetails: 'invoice.showBankDetails',
+  showPaymentTerms: 'invoice.showPaymentTerms',
+  showNotes: 'invoice.showNotes',
   published: 'invoice.published',
 };
+
+function asBool(value, fallback = true) {
+  if (value === false || value === 'false' || value === 0 || value === '0') return false;
+  if (value === true || value === 'true' || value === 1 || value === '1') return true;
+  if (value == null || value === '') return fallback;
+  return Boolean(value);
+}
+
+function designerDefaults() {
+  return {
+    templateName: 'Default Invoice',
+    style: 'modern',
+    primaryColor: '#044dab',
+    headerColor: '#031958',
+    font: 'Inter',
+    headerAlign: 'left',
+    logoSize: 'medium',
+    showLogo: true,
+    showAddress: true,
+    showContact: true,
+    showGst: true,
+    showCustomerId: true,
+    showTracking: true,
+    showBookingDate: true,
+    showDueDate: true,
+    showPaymentStatus: true,
+    showBankDetails: true,
+    showPaymentTerms: true,
+    showNotes: true,
+    published: false,
+  };
+}
 
 export async function getInvoiceSummary() {
   const [total, issued, paid, amount] = await Promise.all([
@@ -332,36 +368,64 @@ export async function getInvoiceSummary() {
 }
 
 export async function getDesigner() {
-  const { Setting } = await import('../settings/setting.model.js');
-  const items = await Setting.find({ key: { $in: Object.values(DESIGNER_KEYS) } });
-  const map = Object.fromEntries(items.map((s) => [s.key, s.value]));
-  return {
-    templateName: map[DESIGNER_KEYS.templateName] || 'Default Invoice',
-    style: map[DESIGNER_KEYS.style] || 'modern',
-    primaryColor: map[DESIGNER_KEYS.primaryColor] || '#2563eb',
-    headerColor: map[DESIGNER_KEYS.headerColor] || '#0f172a',
-    font: map[DESIGNER_KEYS.font] || 'Inter',
-    headerAlign: map[DESIGNER_KEYS.headerAlign] || 'left',
-    logoSize: map[DESIGNER_KEYS.logoSize] || 'medium',
-    showLogo: map[DESIGNER_KEYS.showLogo] !== false,
-    showAddress: map[DESIGNER_KEYS.showAddress] !== false,
-    showContact: map[DESIGNER_KEYS.showContact] !== false,
-    showGst: map[DESIGNER_KEYS.showGst] !== false,
-    showCustomerId: map[DESIGNER_KEYS.showCustomerId] !== false,
-    showTracking: map[DESIGNER_KEYS.showTracking] !== false,
-    showBookingDate: map[DESIGNER_KEYS.showBookingDate] !== false,
-    showDueDate: map[DESIGNER_KEYS.showDueDate] !== false,
-    published: map[DESIGNER_KEYS.published] === true,
-  };
+  const defaults = designerDefaults();
+  try {
+    const { Setting } = await import('../settings/setting.model.js');
+    const items = await Setting.find({ key: { $in: Object.values(DESIGNER_KEYS) } });
+    const map = Object.fromEntries(items.map((s) => [s.key, s.value]));
+    const boolFields = [
+      'showLogo',
+      'showAddress',
+      'showContact',
+      'showGst',
+      'showCustomerId',
+      'showTracking',
+      'showBookingDate',
+      'showDueDate',
+      'showPaymentStatus',
+      'showBankDetails',
+      'showPaymentTerms',
+      'showNotes',
+    ];
+    const next = { ...defaults };
+    for (const field of Object.keys(DESIGNER_KEYS)) {
+      const raw = map[DESIGNER_KEYS[field]];
+      if (raw == null || raw === '') continue;
+      next[field] = boolFields.includes(field) ? asBool(raw, defaults[field]) : raw;
+    }
+    next.published = asBool(map[DESIGNER_KEYS.published], false);
+    return next;
+  } catch (err) {
+    console.warn('[invoice] designer load failed:', err.message);
+    return defaults;
+  }
 }
 
 export async function saveDesigner(payload, actor, req) {
   const { upsertSetting } = await import('../settings/setting.service.js');
   const current = await getDesigner();
   const next = { ...current, ...payload };
+  const boolFields = [
+    'showLogo',
+    'showAddress',
+    'showContact',
+    'showGst',
+    'showCustomerId',
+    'showTracking',
+    'showBookingDate',
+    'showDueDate',
+    'showPaymentStatus',
+    'showBankDetails',
+    'showPaymentTerms',
+    'showNotes',
+    'published',
+  ];
   for (const [field, key] of Object.entries(DESIGNER_KEYS)) {
+    let value = next[field];
+    if (boolFields.includes(field)) value = asBool(value, field === 'published' ? false : true);
+    if (value == null) value = field === 'published' ? false : '';
     await upsertSetting(
-      { key, value: next[field], group: 'invoice', description: `Invoice designer ${field}` },
+      { key, value, group: 'invoice', description: `Invoice designer ${field}` },
       actor,
       req
     );

@@ -8,19 +8,19 @@ export const expensesApi = apiSlice.injectEndpoints({
     }),
     createExpense: builder.mutation({
       query: (body) => ({ url: '/expenses', method: 'POST', body }),
-      invalidatesTags: ['Expenses'],
+      invalidatesTags: ['Expenses', 'Settlements'],
     }),
     updateExpense: builder.mutation({
       query: ({ id, ...body }) => ({ url: `/expenses/${id}`, method: 'PATCH', body }),
-      invalidatesTags: ['Expenses'],
+      invalidatesTags: ['Expenses', 'Settlements'],
     }),
     approveExpense: builder.mutation({
       query: ({ id, ...body }) => ({ url: `/expenses/${id}/approve`, method: 'POST', body }),
-      invalidatesTags: ['Expenses'],
+      invalidatesTags: ['Expenses', 'Settlements'],
     }),
     rejectExpense: builder.mutation({
       query: ({ id, ...body }) => ({ url: `/expenses/${id}/reject`, method: 'POST', body }),
-      invalidatesTags: ['Expenses'],
+      invalidatesTags: ['Expenses', 'Settlements'],
     }),
   }),
 })

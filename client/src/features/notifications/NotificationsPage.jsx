@@ -18,7 +18,7 @@ export function NotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [page, setPage] = useState(1)
   const queryArgs = useMemo(() => ({ page, limit: 20, type: type === 'ALL' ? undefined : type, unread: unreadOnly ? 'true' : undefined }), [page, type, unreadOnly])
-  const { data, isFetching } = useGetNotificationsQuery(queryArgs)
+  const { data, isFetching, isError, error } = useGetNotificationsQuery(queryArgs, { pollingInterval: 15000, refetchOnFocus: true })
   const [markRead] = useMarkNotificationReadMutation()
   const [markAll, { isLoading: markingAll }] = useMarkAllNotificationsReadMutation()
   const rows = data?.data || []
@@ -44,13 +44,22 @@ export function NotificationsPage() {
       </div>
       <Card>
         <CardBody className={`space-y-2 ${isFetching ? 'opacity-60' : ''}`}>
-          {rows.length === 0 ? <EmptyState icon={Bell} title="No notifications" /> : rows.map((n) => (
-            <button key={n._id} type="button" onClick={() => !n.readAt && markRead(n._id)} className={`w-full rounded-2xl border px-4 py-3 text-left ${n.readAt ? 'border-ink-100 bg-white' : 'border-blue-100 bg-blue-50/50'}`}>
-              <p className="text-sm font-medium text-ink-900">{n.title} {!n.readAt && <span className="text-blue-600">●</span>}</p>
-              <p className="text-sm text-ink-600">{n.body}</p>
+          {rows.length === 0 ? (
+            <EmptyState
+              icon={Bell}
+              title={isError ? 'Could not load notifications' : 'No notifications'}
+              description={isError ? getErrorMessage(error) : 'Shipment, payment, and trip alerts will appear here.'}
+            />
+          ) : rows.map((n) => {
+            const unread = !(n.isRead || n.readAt)
+            return (
+            <button key={n._id} type="button" onClick={() => unread && markRead(n._id)} className={`w-full rounded-2xl border px-4 py-3 text-left ${unread ? 'border-blue-100 bg-blue-50/50' : 'border-ink-100 bg-white'}`}>
+              <p className="text-sm font-medium text-ink-900">{n.title} {unread && <span className="text-blue-600">●</span>}</p>
+              <p className="text-sm text-ink-600">{n.body || n.message}</p>
               <p className="mt-1 text-xs uppercase text-ink-400">{n.type} · {n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</p>
             </button>
-          ))}
+            )
+          })}
           <Pagination meta={meta} onPageChange={setPage} />
         </CardBody>
       </Card>

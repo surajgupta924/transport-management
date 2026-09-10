@@ -9,6 +9,7 @@ import { parsePagination, buildMeta } from '../../utils/pagination.js';
 import { writeAuditLog } from '../audit/audit.service.js';
 import { nextTripNumber } from '../../utils/sequence.js';
 import { presentBooking } from '../bookings/booking.service.js';
+import { notifyStaff } from '../notifications/notification.service.js';
 
 function linkedId(value) {
   if (!value) return undefined;
@@ -68,6 +69,14 @@ export async function listTrips(query, actor) {
   if (query.driverId) filter.driver = query.driverId;
   if (query.vehicleId) filter.vehicle = query.vehicleId;
   if (query.bookingId) filter.booking = query.bookingId;
+  if (query.assignmentStatus) filter.assignmentStatus = query.assignmentStatus;
+  if (query.accepted === 'true') {
+    filter.status = { $nin: ['CANCELLED'] };
+    filter.$or = [
+      { assignmentStatus: 'ACCEPTED' },
+      { status: { $in: ['ASSIGNED', 'STARTED', 'IN_TRANSIT', 'IN_PROGRESS', 'OUT_FOR_DELIVERY', 'COMPLETED'] } },
+    ];
+  }
 
   if (actor?.portalType === 'DRIVER' || query.mine === 'true' || query.mine === true) {
     let driverId = linkedId(actor?.linkedDriver);
@@ -98,7 +107,7 @@ export async function listTrips(query, actor) {
     Trip.find(filter)
       .populate({
         path: 'booking',
-        select: 'bookingNumber status source customer pickup delivery charges',
+        select: 'bookingNumber shipmentNumber lrNumber status source customer pickup delivery charges consignor consignee paymentMode notes',
         populate: { path: 'customer', select: 'name company' },
       })
       .populate('vehicle', 'registrationNumber type status currentKm')
@@ -404,7 +413,15 @@ export async function assignShipment(payload, actor, req) {
     },
     actor,
     req
-  );
+  ).then((trip) => {
+    notifyStaff({
+      title: 'Shipment assigned',
+      body: `${booking.shipmentNumber || booking.bookingNumber} has been assigned to a vehicle and driver.`,
+      type: 'SUCCESS',
+      link: '/app/assignments',
+    }).catch(() => {});
+    return trip;
+  });
 }
 
 export async function acceptAssignment(id, actor, req) {
@@ -425,6 +442,12 @@ export async function acceptAssignment(id, actor, req) {
     description: `${actor.email} accepted assignment ${trip.tripNumber}`,
     req,
   });
+  notifyStaff({
+    title: 'Trip accepted',
+    body: `${trip.tripNumber} was accepted and is ready for expenses and settlement.`,
+    type: 'SUCCESS',
+    link: '/app/trip-expenses',
+  }).catch(() => {});
   return getTripById(trip._id);
 }
 

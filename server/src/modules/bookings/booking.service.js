@@ -7,7 +7,9 @@ import { nextBookingNumber, nextShipmentNumber, nextLrNumber } from '../../utils
 import { assertOtpToken } from '../auth/otp.service.js';
 import { enqueueEmail } from '../../jobs/index.js';
 import { applyLoadingIncentives } from '../loadingStaff/loadingStaff.service.js';
-import { emitNotification } from '../notifications/notification.service.js';
+import { notifyStaff } from '../notifications/notification.service.js';
+import PDFDocument from 'pdfkit';
+import { Setting } from '../settings/setting.model.js';
 
 function linkedId(value) {
   if (!value) return undefined;
@@ -178,7 +180,13 @@ export async function getBookingById(id) {
     .populate('customer', 'name company email mobile source')
     .populate('route', 'name origin destination stops distanceKm')
     .populate('branch', 'name code')
-    .populate('trip')
+    .populate({
+      path: 'trip',
+      populate: [
+        { path: 'vehicle', select: 'registrationNumber type' },
+        { path: 'driver', select: 'name mobile' },
+      ],
+    })
     .populate('loadingStaff.staff', 'name employeeCode designation incentiveRate')
     .populate('createdBy', 'name email');
   if (!booking) throw new ApiError(404, 'Booking not found');
@@ -240,9 +248,9 @@ export async function createBooking(payload, actor, req) {
     req,
   });
 
-  emitNotification(actor._id, {
+  notifyStaff({
     title: `New shipment: ${booking.shipmentNumber || booking.bookingNumber}`,
-    body: `${customer.name} is waiting for approval.`,
+    body: `${customer.name} · ${booking.pickup?.address?.city || ''} → ${booking.delivery?.address?.city || ''} is waiting for approval.`,
     type: 'INFO',
     link: '/app/shipments?status=PENDING',
   }).catch(() => {});
@@ -317,8 +325,8 @@ export async function transitionBooking(id, { status, reason }, actor, req) {
 export async function deleteBooking(id, actor, req) {
   const booking = await Booking.findById(id);
   if (!booking) throw new ApiError(404, 'Booking not found');
-  if (!['DRAFT', 'CANCELLED'].includes(booking.status)) {
-    throw new ApiError(400, 'Only DRAFT or CANCELLED bookings can be deleted');
+  if (!['DRAFT', 'CANCELLED', 'PENDING', 'UNASSIGNED', 'CONFIRMED'].includes(booking.status)) {
+    throw new ApiError(400, 'Assigned or in-transit shipments cannot be deleted');
   }
   await booking.deleteOne();
   await writeAuditLog({
@@ -356,4 +364,82 @@ export async function getBookingStats(actor) {
     cancelled: byStatus.CANCELLED || 0,
     byStatus,
   };
+}
+
+function companyLine(map, key, fallback = '') {
+  const value = map[key];
+  return value == null || value === '' ? fallback : String(value);
+}
+
+export async function generateLrPdf(id) {
+  const booking = await Booking.findById(id)
+    .populate('customer', 'name company email mobile gstin')
+    .populate('branch', 'name code')
+    .populate('loadingStaff.staff', 'name employeeCode designation');
+  if (!booking) throw new ApiError(404, 'Shipment not found');
+
+  const settings = await Setting.find({ key: { $regex: /^company\./ } });
+  const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+  const presented = presentBooking(booking);
+  const charges = presented.charges || {};
+
+  const doc = new PDFDocument({ size: 'A4', margin: 36 });
+  const chunks = [];
+  doc.on('data', (chunk) => chunks.push(chunk));
+  const done = new Promise((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
+
+  const companyName = companyLine(map, 'company.name', 'SwiftHaul');
+  doc.fontSize(16).text(companyName, { align: 'left' });
+  doc.fontSize(9).text(companyLine(map, 'company.tagline', 'FLEET OWNERS & TRANSPORT CONTRACTORS'), { align: 'left' });
+  doc.text(
+    [
+      companyLine(map, 'company.address'),
+      [companyLine(map, 'company.city'), companyLine(map, 'company.state'), companyLine(map, 'company.pincode')].filter(Boolean).join(', '),
+      companyLine(map, 'company.supportPhone') ? `Phone: ${companyLine(map, 'company.supportPhone')}` : '',
+      companyLine(map, 'company.supportEmail') ? `Email: ${companyLine(map, 'company.supportEmail')}` : '',
+      companyLine(map, 'company.gstin') ? `GSTIN: ${companyLine(map, 'company.gstin')}` : '',
+    ]
+      .filter(Boolean)
+      .join('  |  ')
+  );
+  doc.moveDown(0.4);
+  doc.fontSize(14).text('LORRY RECEIPT', { align: 'center' });
+  doc.moveDown(0.3);
+  doc.fontSize(10);
+  doc.text(`LR Number: ${presented.lrNumber || '—'}`);
+  doc.text(`Shipment: ${presented.shipmentNumber || presented.bookingNumber}`);
+  doc.text(`LR Date: ${presented.bookingDate ? new Date(presented.bookingDate).toLocaleDateString('en-IN') : '—'}`);
+  doc.text(`Payment Mode: ${presented.paymentMode || '—'}`);
+  doc.moveDown(0.4);
+  doc.text(`Consignor: ${presented.consignor?.name || presented.customer?.name || '—'}`);
+  doc.text(`${presented.consignor?.company || ''} ${presented.consignor?.mobile || ''}`.trim());
+  doc.text(`${presented.consignor?.address || presented.pickup?.address || ''} ${presented.consignor?.city || presented.pickup?.city || ''}`.trim());
+  doc.text(`GSTIN: ${presented.consignor?.gstin || presented.customer?.gstin || '—'}`);
+  doc.moveDown(0.3);
+  doc.text(`Consignee: ${presented.consignee?.name || '—'}`);
+  doc.text(`${presented.consignee?.company || ''} ${presented.consignee?.mobile || ''}`.trim());
+  doc.text(`${presented.consignee?.address || presented.delivery?.address || ''} ${presented.consignee?.city || presented.delivery?.city || ''}`.trim());
+  doc.text(`GSTIN: ${presented.consignee?.gstin || '—'}`);
+  doc.moveDown(0.4);
+  doc.text(`From: ${presented.pickup?.city || '—'}    To: ${presented.delivery?.city || '—'}`);
+  doc.text(`Expected delivery: ${presented.expectedDeliveryDate ? new Date(presented.expectedDeliveryDate).toLocaleDateString('en-IN') : '—'}`);
+  doc.moveDown(0.3);
+  doc.text('Goods:');
+  const items = presented.items?.length ? presented.items : [{ name: presented.cargo?.description || 'Goods', quantity: presented.cargo?.packages || 1, unit: 'PKG' }];
+  items.forEach((item, index) => {
+    doc.text(`${index + 1}. ${item.name || 'Item'}  Qty: ${item.quantity || 1} ${item.unit || ''}  HSN: ${item.hsn || '—'}`);
+  });
+  (presented.packages || []).forEach((pkg, index) => {
+    doc.text(`Pkg ${index + 1}: ${pkg.type || 'Package'} x ${pkg.quantity || 1}  ${pkg.weightKg || 0} kg  ${pkg.description || ''}`);
+  });
+  doc.moveDown(0.3);
+  doc.text(`Weight: ${presented.cargo?.weightKg || 0} kg`);
+  doc.text(`Freight: ${charges.freight || 0}   Loading: ${charges.loading || 0}   Unloading: ${charges.unloading || 0}`);
+  doc.text(`Taxable: ${charges.taxableAmount || 0}   GST ${charges.taxPercent || 0}%: ${charges.taxAmount || 0}`);
+  doc.fontSize(12).text(`Net payable: ${charges.total || 0}`);
+  if (presented.notes) {
+    doc.moveDown(0.3).fontSize(10).text(`Remarks: ${presented.notes}`);
+  }
+  doc.end();
+  return done;
 }

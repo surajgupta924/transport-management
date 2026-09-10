@@ -14,6 +14,8 @@ const expenseFields = z.object({
   branchId: objectId.optional().or(z.literal('')),
   vendorId: objectId.optional().or(z.literal('')),
   receiptUrl: z.string().optional(),
+  location: z.string().optional(),
+  liters: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
 });
 

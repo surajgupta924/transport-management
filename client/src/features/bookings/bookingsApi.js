@@ -26,6 +26,10 @@ export const bookingsApi = apiSlice.injectEndpoints({
       query: ({ id, status }) => ({ url: `/bookings/${id}/status`, method: 'POST', body: { status } }),
       invalidatesTags: (_r, _e, { id }) => ['Bookings', { type: 'Bookings', id }, 'Dashboard'],
     }),
+    deleteBooking: builder.mutation({
+      query: (id) => ({ url: `/bookings/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Bookings', 'Dashboard'],
+    }),
   }),
 })
 
@@ -36,4 +40,6 @@ export const {
   useCreateBookingMutation,
   useUpdateBookingMutation,
   useUpdateBookingStatusMutation,
+  useDeleteBookingMutation,
+  useLazyGetBookingQuery,
 } = bookingsApi

@@ -5,6 +5,7 @@ import { applyPaymentToInvoice, recalcCustomerBalance } from '../invoices/invoic
 import { ApiError } from '../../utils/ApiError.js';
 import { parsePagination, buildMeta } from '../../utils/pagination.js';
 import { writeAuditLog } from '../audit/audit.service.js';
+import { notifyStaff } from '../notifications/notification.service.js';
 
 export async function listPayments(query, actor) {
   const { page, limit, skip, sort } = parsePagination(query);
@@ -91,6 +92,12 @@ export async function createPayment(payload, actor, req) {
     description: `${actor.email} recorded payment of ${payload.amount} for ${invoice.invoiceNumber}`,
     req,
   });
+  notifyStaff({
+    title: `Payment recorded: ${invoice.invoiceNumber}`,
+    body: `₹${payload.amount} received via ${payload.method}.`,
+    type: 'SUCCESS',
+    link: '/app/payments',
+  }).catch(() => {});
   return getPaymentById(payment._id);
 }
 

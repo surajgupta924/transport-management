@@ -33,6 +33,8 @@ const expenseSchema = new mongoose.Schema(
     approvedAt: Date,
     rejectionReason: String,
     receiptUrl: String,
+    location: { type: String, default: '' },
+    liters: { type: Number, default: 0 },
     notes: { type: String, default: '' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },

@@ -26,3 +26,18 @@ export const settleSettlement = asyncHandler(async (req, res) => {
   const settlement = await settlementService.settleSettlement(req.params.id, req.body, req.user, req);
   return sendSuccess(res, { message: 'Settlement updated', data: settlement });
 });
+
+export const tripSettlementBoard = asyncHandler(async (req, res) => {
+  const data = await settlementService.tripSettlementBoard(req.query);
+  return sendSuccess(res, { message: 'Trip settlement board', data: data.items, meta: data.stats });
+});
+
+export const recordAdvance = asyncHandler(async (req, res) => {
+  const expense = await settlementService.recordAdvance(req.body, req.user, req);
+  return sendSuccess(res, { status: 201, message: 'Driver advance recorded', data: expense });
+});
+
+export const settleTrip = asyncHandler(async (req, res) => {
+  const settlement = await settlementService.settleTrip(req.params.tripId, req.user, req);
+  return sendSuccess(res, { message: 'Trip settled', data: settlement });
+});

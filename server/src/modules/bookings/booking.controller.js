@@ -36,3 +36,10 @@ export const deleteBooking = asyncHandler(async (req, res) => {
   const result = await bookingService.deleteBooking(req.params.id, req.user, req);
   return sendSuccess(res, { message: 'Booking deleted', data: result });
 });
+
+export const downloadLr = asyncHandler(async (req, res) => {
+  const buffer = await bookingService.generateLrPdf(req.params.id);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="lr-${req.params.id}.pdf"`);
+  return res.send(buffer);
+});

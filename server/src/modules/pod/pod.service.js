@@ -4,6 +4,7 @@ import { Booking } from '../bookings/booking.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { parsePagination, buildMeta } from '../../utils/pagination.js';
 import { writeAuditLog } from '../audit/audit.service.js';
+import { notifyStaff } from '../notifications/notification.service.js';
 
 export async function listPods(query, actor) {
   const { page, limit, skip, sort, search } = parsePagination(query);
@@ -156,5 +157,14 @@ export async function verifyPod(id, { status, reason }, actor, req) {
     description: `${actor.email} ${status.toLowerCase()} POD`,
     req,
   });
+  notifyStaff({
+    title: status === 'VERIFIED' ? 'POD verified' : 'POD rejected',
+    body:
+      status === 'VERIFIED'
+        ? 'Proof of delivery was accepted and the shipment was completed.'
+        : `POD was rejected${reason ? `: ${reason}` : ''}.`,
+    type: status === 'VERIFIED' ? 'SUCCESS' : 'WARNING',
+    link: '/app/pod',
+  }).catch(() => {});
   return getPodById(pod._id);
 }

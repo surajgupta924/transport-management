@@ -39,8 +39,17 @@ export function BrandingProvider({ children }) {
       supportEmail: raw.supportEmail || '',
       supportPhone: raw.supportPhone || '',
       gstin: raw.gstin || '',
+      pan: raw.pan || '',
       currency: raw.currency || 'INR',
       timezone: raw.timezone || 'Asia/Kolkata',
+      address: raw.address || '',
+      city: raw.city || '',
+      state: raw.state || '',
+      pincode: raw.pincode || '',
+      bankName: raw.bankName || '',
+      bankAccount: raw.bankAccount || '',
+      ifsc: raw.ifsc || '',
+      paymentTerms: raw.paymentTerms || '',
       initials: companyName
         .split(/\s+/)
         .filter(Boolean)

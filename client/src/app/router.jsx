@@ -28,6 +28,8 @@ import { ShipmentsPage } from '../features/shipments/ShipmentsPage'
 import { AssignmentsPage } from '../features/operations/AssignmentsPage'
 import { ActiveTripsPage } from '../features/operations/ActiveTripsPage'
 import { InvoiceDesignerPage } from '../features/invoices/InvoiceDesignerPage'
+import { TripExpensesPage } from '../features/trips/TripExpensesPage'
+import { TripSettlementPage } from '../features/trips/TripSettlementPage'
 import { FuelPage } from '../features/fuel/FuelPage'
 import { MaintenancePage } from '../features/maintenance/MaintenancePage'
 import { ExpensesPage } from '../features/expenses/ExpensesPage'
@@ -138,6 +140,8 @@ export function AppRouter() {
               <Route element={<RequirePermission permission="expenses:view" />}>
                 <Route path="expenses" element={<ExpensesPage />} />
                 <Route path="settlements" element={<SettlementsPage />} />
+                <Route path="trip-expenses" element={<TripExpensesPage />} />
+                <Route path="trip-settlement" element={<TripSettlementPage />} />
               </Route>
               <Route element={<RequirePermission permission="pod:view" />}>
                 <Route path="pod" element={<PodsPage />} />

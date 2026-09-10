@@ -21,6 +21,18 @@ export const settlementsApi = apiSlice.injectEndpoints({
       query: ({ id, ...body }) => ({ url: `/settlements/${id}/settle`, method: 'POST', body }),
       invalidatesTags: ['Settlements', 'Expenses'],
     }),
+    getSettlementBoard: builder.query({
+      query: (params) => ({ url: '/settlements/board', params }),
+      providesTags: ['Settlements', 'Expenses', 'Trips'],
+    }),
+    recordAdvance: builder.mutation({
+      query: (body) => ({ url: '/settlements/advance', method: 'POST', body }),
+      invalidatesTags: ['Settlements', 'Expenses'],
+    }),
+    settleTrip: builder.mutation({
+      query: (tripId) => ({ url: `/settlements/trip/${tripId}/settle`, method: 'POST' }),
+      invalidatesTags: ['Settlements', 'Expenses', 'Trips'],
+    }),
   }),
 })
 
@@ -30,4 +42,7 @@ export const {
   useGetDriverBalanceQuery,
   useCreateSettlementMutation,
   useSettleSettlementMutation,
+  useGetSettlementBoardQuery,
+  useRecordAdvanceMutation,
+  useSettleTripMutation,
 } = settlementsApi
