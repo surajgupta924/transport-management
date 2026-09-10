@@ -198,6 +198,7 @@ export function AppRouter() {
           <Route element={<RequirePortal portal="CUSTOMER" />}>
             <Route path="/portal" element={<PortalShell />}>
               <Route index element={<PortalDashboardPage />} />
+              <Route path="create" element={<PortalBookingFormPage />} />
               <Route path="bookings" element={<PortalBookingsPage />} />
               <Route path="bookings/new" element={<PortalBookingFormPage />} />
               <Route path="bookings/:id" element={<PortalBookingDetailPage />} />

@@ -1,10 +1,12 @@
 import { Menu, LogOut, Bell, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout, selectCurrentUser } from '../../features/auth/authSlice'
 import { useLogoutMutation } from '../../features/auth/authApi'
 import { useGetNotificationsQuery } from '../../features/notifications/notificationsApi'
 import { tokenStorage } from '../../lib/tokenStorage'
+import { disconnectSocket } from '../../lib/socket'
 import { Button } from '../ui/Button'
 
 export function Topbar({ onMenuClick }) {
@@ -12,8 +14,15 @@ export function Topbar({ onMenuClick }) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [logoutApi] = useLogoutMutation()
+  const isCustomer = user?.portalType === 'CUSTOMER'
   const { data } = useGetNotificationsQuery({ page: 1, limit: 1, unread: 'true' }, { pollingInterval: 15000 })
   const unread = data?.meta?.unreadCount || 0
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000)
+    return () => clearInterval(timer)
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -22,6 +31,7 @@ export function Topbar({ onMenuClick }) {
       // clear local session anyway
     }
     dispatch(logout())
+    disconnectSocket()
     navigate('/login')
   }
 
@@ -40,7 +50,10 @@ export function Topbar({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <Link to="/app/notifications" className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100">
+        <span className="hidden text-sm tabular-nums text-slate-500 sm:inline">
+          {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+        <Link to={isCustomer ? '/portal/track' : '/app/notifications'} className="relative rounded-full p-2 text-slate-500 hover:bg-slate-100">
           <Bell className="h-5 w-5" />
           {unread > 0 && (
             <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />

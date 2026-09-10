@@ -164,7 +164,7 @@ export async function listBookings(query, actor) {
       .populate('customer', 'name company email mobile source')
       .populate('route', 'name origin destination')
       .populate('branch', 'name code')
-      .populate('trip', 'tripNumber status')
+      .populate('trip', 'tripNumber status lastLocation locationSharing')
       .populate('loadingStaff.staff', 'name employeeCode designation incentiveRate')
       .sort(sort)
       .skip(skip)
@@ -194,7 +194,7 @@ export async function getBookingById(id) {
 }
 
 export async function createBooking(payload, actor, req) {
-  if (actor?.portalType === 'CUSTOMER') {
+  if (actor?.portalType === 'CUSTOMER' && !linkedId(actor.linkedCustomer)) {
     assertOtpToken(payload.otpToken, payload.clientEmail || actor.email);
   }
 

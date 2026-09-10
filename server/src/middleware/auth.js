@@ -17,7 +17,9 @@ export const authenticate = asyncHandler(async (req, res, next) => {
       path: 'role',
       populate: { path: 'permissions', select: 'code module action' },
     })
-    .populate('branch', 'name code');
+    .populate('branch', 'name code')
+    .populate('linkedCustomer', 'name company email mobile')
+    .populate('linkedDriver', 'name mobile');
 
   if (!user || user.status === 'INACTIVE' || user.status === 'SUSPENDED') {
     throw new ApiError(401, 'Account is not active', null, 'UNAUTHORIZED');
@@ -40,7 +42,9 @@ export const optionalAuthenticate = asyncHandler(async (req, res, next) => {
         path: 'role',
         populate: { path: 'permissions', select: 'code module action' },
       })
-      .populate('branch', 'name code');
+      .populate('branch', 'name code')
+    .populate('linkedCustomer', 'name company email mobile')
+    .populate('linkedDriver', 'name mobile');
     if (user && user.status === 'ACTIVE') {
       req.user = user;
       req.permissionCodes = new Set((user.role?.permissions || []).map((p) => p.code));
